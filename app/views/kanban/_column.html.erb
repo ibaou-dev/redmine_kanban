@@ -1,0 +1,32 @@
+<%
+  wip_exceeded = wip_limit.present? && wip_limit.to_i > 0 && count > wip_limit.to_i
+  col_classes  = ['kb-column']
+  col_classes << 'kb-column-closed'       if closed
+  col_classes << 'kb-column-wip-exceeded' if wip_exceeded
+%>
+<div class="<%= col_classes.join(' ') %>"
+     data-status-id="<%= status.id %>"
+     <% if wip_limit.present? && wip_limit.to_i > 0 %>data-wip-limit="<%= wip_limit.to_i %>"<% end %>
+     role="group"
+     aria-label="<%= status.name %>">
+
+  <div class="kb-column-header">
+    <span class="kb-column-name"><%= status.name %></span>
+    <span class="kb-column-count<%= ' kb-count-exceeded' if wip_exceeded %>"
+          title="<%= wip_exceeded ? l(:label_wip_exceeded) : '' %>">
+      <%= count %><% if wip_limit.present? && wip_limit.to_i > 0 %>/<%= wip_limit.to_i %><% end %>
+    </span>
+  </div>
+
+  <div class="kb-column-body" data-status-id="<%= status.id %>">
+    <% issues.each do |issue| %>
+      <%= render partial: 'card', locals: { issue: issue } %>
+    <% end %>
+
+    <% if issues.empty? %>
+      <div class="kb-empty-placeholder" aria-hidden="true">
+        <%= l(:label_no_issues) %>
+      </div>
+    <% end %>
+  </div>
+</div>

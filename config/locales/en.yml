@@ -1,0 +1,21 @@
+en:
+  project_module_kanban: "Kanban"
+
+  permission_view_kanban: "View Kanban board"
+  permission_manage_kanban: "Manage Kanban board (move issues, set WIP limits)"
+
+  label_kanban: "Kanban"
+  label_kanban_board: "Kanban Board"
+  label_wip_limit: "WIP Limit"
+  label_wip_exceeded: "WIP limit exceeded"
+  label_no_issues: "No issues in this column"
+  label_move_to: "Move to..."
+  label_card_detail: "Issue Details"
+  label_close_panel: "Close panel"
+  label_loading: "Loading..."
+
+  notice_kanban_status_updated: "Issue status updated."
+  error_kanban_transition_not_allowed: "This status transition is not allowed by the workflow."
+  error_kanban_issue_not_found: "Issue not found."
+  error_kanban_save_failed: "Could not update issue: %{errors}"
+  error_kanban_unauthorized: "You are not authorized to perform this action."

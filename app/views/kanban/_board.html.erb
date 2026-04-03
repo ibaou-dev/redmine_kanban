@@ -1,0 +1,19 @@
+<%# Wrap in a form so Redmine's built-in contextMenuInit() works on cards %>
+<form id="kb-context-menu-form"
+      data-cm-url="<%= issues_context_menu_path %>"
+      onsubmit="return false;">
+
+  <div class="kb-board" role="region" aria-label="<%= l(:label_kanban_board) %>">
+    <div class="kb-columns">
+      <% @columns.each do |col| %>
+        <%= render partial: 'column', locals: {
+          status:    col[:status],
+          issues:    col[:issues],
+          count:     col[:count],
+          closed:    col[:closed],
+          wip_limit: @wip_limits[col[:status].id]
+        } %>
+      <% end %>
+    </div>
+  </div>
+</form>

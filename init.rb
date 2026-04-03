@@ -1,0 +1,28 @@
+require 'redmine'
+
+Redmine::Plugin.register :redmine_kanban do
+  name        'Redmine Kanban'
+  author      'ibaou'
+  description 'Kanban board view for Redmine issues with drag-and-drop status transitions'
+  version     '0.1.0'
+
+  requires_redmine version_or_higher: '5.0'
+
+  project_module :kanban do
+    permission :view_kanban,
+               { kanban: [:show, :card_detail] },
+               read: true
+    permission :manage_kanban,
+               { kanban: [:update_status] },
+               require: :member
+  end
+
+  menu :project_menu,
+       :kanban,
+       { controller: 'kanban', action: 'show' },
+       caption:  :label_kanban,
+       after:    :gantt,
+       param:    :project_id
+end
+
+require_relative 'lib/redmine_kanban/hooks/view_layouts_base_html_head_hook'

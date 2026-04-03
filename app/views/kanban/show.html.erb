@@ -1,0 +1,69 @@
+<% content_for :header_tags do %>
+  <%= javascript_include_tag 'vendor/sortable.min', plugin: 'redmine_kanban' %>
+  <%= javascript_include_tag 'redmine_kanban', plugin: 'redmine_kanban' %>
+<% end %>
+
+<div class="contextual">
+  <% if @project %>
+    <%= link_to l(:label_issue_plural), project_issues_path(@project), class: 'icon icon-list' %>
+    <%= link_to l(:label_gantt), project_gantt_path(@project), class: 'icon icon-gantt' %>
+  <% end %>
+</div>
+
+<h2><%= @query&.new_record? == false ? @query.name : l(:label_kanban_board) %><% if @project %> — <%= @project.name %><% end %></h2>
+
+<%= form_tag({ controller: 'kanban', action: 'show', project_id: @project }, method: :get, id: 'query_form') do %>
+  <%= hidden_field_tag 'set_filter', '1' %>
+
+  <div id="query_form_with_buttons" class="hide-when-print">
+    <div id="query_form_content">
+      <fieldset id="filters" class="collapsible <%= @query&.new_record? ? '' : 'collapsed' %>">
+        <legend onclick="toggleFieldset(this);" class="icon icon-<%= @query&.new_record? ? 'expanded' : 'collapsed' %>">
+          <%= sprite_icon(@query&.new_record? ? 'angle-down' : 'angle-right', rtl: !@query&.new_record?) %>
+          <%= l(:label_filter_plural) %>
+        </legend>
+        <div style="<%= @query&.new_record? ? '' : 'display: none;' %>">
+          <%= render partial: 'queries/filters', locals: { query: @query } %>
+        </div>
+      </fieldset>
+    </div>
+
+    <p class="buttons">
+      <%= link_to_function sprite_icon('checked', l(:button_apply)),
+                           '$("#query_form").submit()',
+                           class: 'icon icon-checked' %>
+      <%= link_to sprite_icon('reload', l(:button_clear)),
+                  { controller: 'kanban', action: 'show', project_id: @project, set_filter: 1 },
+                  class: 'icon icon-reload' %>
+    </p>
+  </div>
+<% end %>
+
+<% if @query&.valid? %>
+  <div id="kb-board-container"
+       data-project-id="<%= @project&.identifier %>"
+       data-update-base="<%= @project ? "/projects/#{@project.identifier}/kanban/issues" : "/kanban/issues" %>">
+    <%= render partial: 'board' %>
+  </div>
+
+  <%# Accessible live region — no alert/confirm per project rules %>
+  <div id="kb-notifications" class="kb-notifications" aria-live="polite" aria-atomic="false"></div>
+
+  <%# Slide-out detail panel %>
+  <div id="kb-detail-panel" class="kb-detail-panel" aria-hidden="true"
+       role="dialog" aria-label="<%= l(:label_card_detail) %>">
+    <div class="kb-detail-overlay"></div>
+    <div class="kb-detail-content">
+      <button class="kb-detail-close" aria-label="<%= l(:label_close_panel) %>">&times;</button>
+      <div id="kb-detail-body"><%= l(:label_loading) %></div>
+    </div>
+  </div>
+<% elsif @query %>
+  <div class="flash error">
+    <%= @query.errors.full_messages.join(', ') %>
+  </div>
+<% end %>
+
+<% content_for :sidebar do %>
+  <%= render partial: 'issues/sidebar' %>
+<% end %>
