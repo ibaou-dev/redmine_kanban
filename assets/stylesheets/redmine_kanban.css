@@ -222,16 +222,22 @@ body.kb-dragging * {
 /* Feature 4: three-dot context menu button */
 .kb-card-menu-btn {
   background: none;
-  border: none;
-  padding: 0 3px;
-  font-size: 1rem;
+  border: 1px solid transparent;
+  padding: 2px 6px;
+  font-size: 1.1rem;
   line-height: 1;
   cursor: pointer;
   color: var(--em-text-muted, #94a3b8);
   border-radius: var(--em-radius-xs, 4px);
   opacity: 0;
+  min-width: 24px;
+  min-height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   transition: opacity var(--em-transition, 150ms),
               background var(--em-transition, 150ms),
+              border-color var(--em-transition, 150ms),
               color var(--em-transition, 150ms);
 }
 
@@ -243,7 +249,14 @@ body.kb-dragging * {
 
 .kb-card-menu-btn:hover {
   background: var(--em-bg, #f1f3f5);
+  border-color: var(--em-border, #e2e8f0);
   color: var(--em-text, #1e293b);
+}
+
+/* Context menu selection highlight on cards */
+.kb-card.context-menu-selection {
+  background: var(--em-accent-light, #edf2ff);
+  border-color: var(--em-accent, #4c6ef5);
 }
 
 /* Fix 3 + Feature 8: clickable subject link */

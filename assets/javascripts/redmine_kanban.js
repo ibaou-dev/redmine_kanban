@@ -86,6 +86,8 @@
 
   // ─── AJAX Status Update ──────────────────────────────────────
   function performUpdate(issueId, newStatusId, card, fromCol, oldIndex) {
+    var wasClosed = fromCol.closest('.kb-column').classList.contains('kb-column-closed');
+
     var xhr = new XMLHttpRequest();
     xhr.open('PATCH', updateStatusUrl(issueId), true);
     xhr.setRequestHeader('Content-Type', 'application/json');
@@ -97,14 +99,11 @@
       try { resp = JSON.parse(xhr.responseText); } catch (e) { resp = {}; }
 
       if (xhr.status >= 200 && xhr.status < 300 && resp.success) {
-        // Fix 2: sync kb-closed class with the column the card now lives in
-        var targetCol = card.closest('.kb-column');
         card.classList.toggle('kb-closed', !!resp.is_closed);
-
         refreshColumnCounts();
+        refreshParentBadge(card, wasClosed, !!resp.is_closed);
         showToast('success', resp.message || 'Status updated.');
       } else {
-        // Revert card to original position
         var ref = fromCol.children[oldIndex] || null;
         fromCol.insertBefore(card, ref);
         refreshColumnCounts();
@@ -120,6 +119,41 @@
     };
 
     xhr.send(JSON.stringify({ status_id: newStatusId }));
+  }
+
+  // ─── Live subtask badge refresh ──────────────────────────────
+  function refreshParentBadge(card, wasClosed, isClosed) {
+    if (wasClosed === isClosed) return; // no closed-state change
+
+    var parentId = card.dataset.parentId;
+    if (!parentId) return;
+
+    var parentCard = document.querySelector('.kb-card[data-issue-id="' + parentId + '"]');
+    if (!parentCard) return;
+
+    var badge = parentCard.querySelector('.kb-subtask-badge');
+    if (!badge) return;
+
+    // Parse current "done/total" or "✓ done/total" from badge text
+    var text = badge.textContent.trim();
+    var match = text.match(/(\d+)\s*\/\s*(\d+)/);
+    if (!match) return;
+
+    var done  = parseInt(match[1], 10);
+    var total = parseInt(match[2], 10);
+
+    if (!wasClosed && isClosed)  done = Math.min(done + 1, total);
+    if (wasClosed && !isClosed)  done = Math.max(done - 1, 0);
+
+    // Update badge text and class
+    var label = done === total ? '\u2713 ' + done + '/' + total : done + '/' + total;
+    badge.textContent = label;
+    badge.title = done + ' of ' + total + ' subtasks closed';
+
+    badge.classList.remove('kb-subtasks-done', 'kb-subtasks-partial', 'kb-subtasks-none');
+    if (done === total)    badge.classList.add('kb-subtasks-done');
+    else if (done === 0)   badge.classList.add('kb-subtasks-none');
+    else                   badge.classList.add('kb-subtasks-partial');
   }
 
   // ─── SortableJS Initialization ───────────────────────────────
@@ -170,47 +204,11 @@
     });
   }
 
-  // ─── Feature 4: Three-dot context menu button ────────────────
-  // The .js-contextmenu class is already wired in Redmine's context_menu.js
-  // (contextMenuRightClick fires on click of .js-contextmenu elements).
-  // We just need to check the card's hidden checkbox first so the right
-  // issue gets serialised into the context menu AJAX call.
-  function initContextMenu() {
-    document.addEventListener('click', function (e) {
-      var card = e.target.closest('.kb-card');
-      if (!card) return;
-
-      // For any click on a card, pre-select it for the context menu
-      // (needed both for right-click and for the ⋮ button)
-      document.querySelectorAll('.kb-card-checkbox').forEach(function (cb) {
-        cb.checked = false;
-        cb.closest('.kb-card').classList.remove('context-menu-selection');
-      });
-
-      var cb = card.querySelector('.kb-card-checkbox');
-      if (cb) {
-        cb.checked = true;
-        card.classList.add('context-menu-selection');
-      }
-    });
-
-    // Right-click: also pre-select
-    document.addEventListener('contextmenu', function (e) {
-      var card = e.target.closest('.kb-card');
-      if (!card) return;
-
-      document.querySelectorAll('.kb-card-checkbox').forEach(function (cb) {
-        cb.checked = false;
-        cb.closest('.kb-card').classList.remove('context-menu-selection');
-      });
-
-      var cb = card.querySelector('.kb-card-checkbox');
-      if (cb) {
-        cb.checked = true;
-        card.classList.add('context-menu-selection');
-      }
-    });
-  }
+  // ─── Context Menu ─────────────────────────────────────────────
+  // Each .kb-card has .hascontextmenu so Redmine's built-in context_menu.js
+  // handles right-click and .js-contextmenu click natively — selection,
+  // checkbox toggling, and menu display all work out of the box.
+  // Nothing extra needed here.
 
   // ─── Keyboard Navigation ─────────────────────────────────────
   function initKeyboardNav() {
@@ -274,7 +272,6 @@
     if (!document.getElementById('kb-board-container')) return;
 
     initSortable();
-    initContextMenu();
     initKeyboardNav();
     refreshColumnCounts(); // also sets initial placeholder state
   }

@@ -1,7 +1,8 @@
-<div class="<%= kanban_card_classes(issue) %>"
+<div class="<%= kanban_card_classes(issue) %> hascontextmenu"
      data-issue-id="<%= issue.id %>"
      data-allowed-statuses="<%= kanban_allowed_statuses_json(issue) %>"
      data-issue-url="<%= issue_path(issue) %>"
+     <% if issue.parent_id %>data-parent-id="<%= issue.parent_id %>"<% end %>
      tabindex="0"
      role="article"
      aria-label="<%= "#{issue.tracker.name} ##{issue.id}: #{issue.subject}" %>">
