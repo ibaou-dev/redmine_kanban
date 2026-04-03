@@ -46,18 +46,8 @@
     <%= render partial: 'board' %>
   </div>
 
-  <%# Accessible live region — no alert/confirm per project rules %>
+  <%# Toast notification area — no alert/confirm per project rules %>
   <div id="kb-notifications" class="kb-notifications" aria-live="polite" aria-atomic="false"></div>
-
-  <%# Slide-out detail panel %>
-  <div id="kb-detail-panel" class="kb-detail-panel" aria-hidden="true"
-       role="dialog" aria-label="<%= l(:label_card_detail) %>">
-    <div class="kb-detail-overlay"></div>
-    <div class="kb-detail-content">
-      <button class="kb-detail-close" aria-label="<%= l(:label_close_panel) %>">&times;</button>
-      <div id="kb-detail-body"><%= l(:label_loading) %></div>
-    </div>
-  </div>
 <% elsif @query %>
   <div class="flash error">
     <%= @query.errors.full_messages.join(', ') %>

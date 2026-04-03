@@ -10,7 +10,7 @@ Redmine::Plugin.register :redmine_kanban do
 
   project_module :kanban do
     permission :view_kanban,
-               { kanban: [:show, :card_detail] },
+               { kanban: [:show] },
                read: true
     permission :manage_kanban,
                { kanban: [:update_status] },

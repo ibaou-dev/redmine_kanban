@@ -1,5 +1,5 @@
 /* ============================================================
-   REDMINE KANBAN — Plugin Stylesheet v0.1.0
+   REDMINE KANBAN — Plugin Stylesheet v0.2.0
    Uses --em-* design tokens (ibaou-modern theme) with fallbacks
    Class prefix: kb-
    ============================================================ */
@@ -21,11 +21,6 @@
   min-width: max-content;
 }
 
-/* ─── Toolbar ─── */
-.kb-toolbar {
-  margin-bottom: var(--em-space-sm, 8px);
-}
-
 /* ─── Column ─── */
 .kb-column {
   flex: 0 0 280px;
@@ -38,12 +33,12 @@
   max-height: calc(100vh - 240px);
   min-height: 120px;
   transition: border-color var(--em-transition, 150ms),
-              background var(--em-transition, 150ms),
-              opacity var(--em-transition, 150ms);
+              background var(--em-transition, 150ms);
 }
 
-.kb-column-closed {
-  opacity: 0.65;
+/* Fix 2: dim only the cards in a closed column, not the header */
+.kb-column-closed .kb-card {
+  opacity: 0.6;
 }
 
 .kb-column-header {
@@ -153,7 +148,7 @@ body.kb-dragging * {
   position: relative;
   outline: none;
   transition: box-shadow var(--em-transition, 150ms),
-              transform var(--em-transition, 150ms);
+              opacity var(--em-transition, 150ms);
   user-select: none;
 }
 
@@ -170,6 +165,7 @@ body.kb-dragging * {
               var(--em-shadow-sm, 0 1px 3px rgba(0,0,0,0.08));
 }
 
+/* Fix 2: kb-closed class is toggled by JS on drag, and set server-side at load */
 .kb-card.kb-closed {
   opacity: 0.55;
 }
@@ -180,11 +176,11 @@ body.kb-dragging * {
 }
 
 /* ─── Priority border-left colors ─── */
-.kb-priority-1 { border-left-color: var(--em-text-muted, #94a3b8); } /* Lowest */
-.kb-priority-2 { border-left-color: var(--em-text-secondary, #64748b); } /* Low */
-.kb-priority-3 { border-left-color: var(--em-accent, #4c6ef5); } /* Normal */
-.kb-priority-4 { border-left-color: var(--em-warning, #f59f00); } /* High */
-.kb-priority-5 { border-left-color: var(--em-error, #e03131); } /* Urgent/Immediate */
+.kb-priority-1 { border-left-color: var(--em-text-muted, #94a3b8); }
+.kb-priority-2 { border-left-color: var(--em-text-secondary, #64748b); }
+.kb-priority-3 { border-left-color: var(--em-accent, #4c6ef5); }
+.kb-priority-4 { border-left-color: var(--em-warning, #f59f00); }
+.kb-priority-5 { border-left-color: var(--em-error, #e03131); }
 
 /* ─── Card Header ─── */
 .kb-card-header {
@@ -200,6 +196,14 @@ body.kb-dragging * {
   color: var(--em-text-muted, #94a3b8);
   text-transform: uppercase;
   letter-spacing: 0.07em;
+  flex: 1;
+}
+
+/* Feature 4: right side of header groups #id + ⋮ button */
+.kb-card-header-right {
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .kb-card-id {
@@ -208,13 +212,51 @@ body.kb-dragging * {
   color: var(--em-accent, #4c6ef5);
   text-decoration: none;
   cursor: pointer;
+  white-space: nowrap;
 }
 
 .kb-card-id:hover {
   text-decoration: underline;
 }
 
-/* ─── Card Subject ─── */
+/* Feature 4: three-dot context menu button */
+.kb-card-menu-btn {
+  background: none;
+  border: none;
+  padding: 0 3px;
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  color: var(--em-text-muted, #94a3b8);
+  border-radius: var(--em-radius-xs, 4px);
+  opacity: 0;
+  transition: opacity var(--em-transition, 150ms),
+              background var(--em-transition, 150ms),
+              color var(--em-transition, 150ms);
+}
+
+.kb-card:hover .kb-card-menu-btn,
+.kb-card:focus .kb-card-menu-btn,
+.kb-card:focus-within .kb-card-menu-btn {
+  opacity: 1;
+}
+
+.kb-card-menu-btn:hover {
+  background: var(--em-bg, #f1f3f5);
+  color: var(--em-text, #1e293b);
+}
+
+/* Fix 3 + Feature 8: clickable subject link */
+.kb-card-subject-link {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+}
+
+.kb-card-subject-link:hover .kb-card-subject {
+  color: var(--em-accent, #4c6ef5);
+}
+
 .kb-card-subject {
   font-size: 0.8125rem;
   font-weight: 500;
@@ -225,6 +267,7 @@ body.kb-dragging * {
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  transition: color var(--em-transition, 150ms);
 }
 
 /* ─── Card Footer ─── */
@@ -242,6 +285,7 @@ body.kb-dragging * {
   flex-wrap: wrap;
 }
 
+/* ─── Priority badge ─── */
 .kb-priority-badge {
   font-size: 0.625rem;
   font-weight: 600;
@@ -250,7 +294,6 @@ body.kb-dragging * {
   white-space: nowrap;
 }
 
-/* Priority badge colors by name class */
 .kb-priority-badge.kb-priority-high,
 .kb-priority-badge.kb-priority-urgent,
 .kb-priority-badge.kb-priority-immediate {
@@ -263,6 +306,34 @@ body.kb-dragging * {
   background: var(--em-accent-light, #edf2ff);
   color: var(--em-accent, #4c6ef5);
   border: 1px solid #bac8ff;
+}
+
+/* Feature 5: Subtask progress badge */
+.kb-subtask-badge {
+  font-size: 0.625rem;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 100px;
+  white-space: nowrap;
+  cursor: help;
+}
+
+.kb-subtasks-done {
+  background: #e6fcf5;
+  color: #087f5b;
+  border: 1px solid #96f2d7;
+}
+
+.kb-subtasks-partial {
+  background: var(--em-accent-light, #edf2ff);
+  color: var(--em-accent, #4c6ef5);
+  border: 1px solid #bac8ff;
+}
+
+.kb-subtasks-none {
+  background: var(--em-bg-alt, #f8f9fa);
+  color: var(--em-text-muted, #94a3b8);
+  border: 1px solid var(--em-border, #e2e8f0);
 }
 
 .kb-card-due {
@@ -300,34 +371,6 @@ body.kb-dragging * {
   font-weight: 700;
 }
 
-/* ─── "Move to" accessible action ─── */
-.kb-card-actions {
-  margin-top: var(--em-space-xs, 4px);
-  display: none;
-}
-
-.kb-card:hover .kb-card-actions,
-.kb-card:focus .kb-card-actions,
-.kb-card:focus-within .kb-card-actions {
-  display: block;
-}
-
-.kb-move-to {
-  width: 100%;
-  font-size: 0.6875rem;
-  padding: 3px var(--em-space-xs, 4px);
-  border: 1px solid var(--em-border, #e2e8f0);
-  border-radius: var(--em-radius-xs, 4px);
-  background: var(--em-bg-alt, #f8f9fa);
-  color: var(--em-text-secondary, #64748b);
-  cursor: pointer;
-}
-
-.kb-move-to:hover {
-  border-color: var(--em-accent, #4c6ef5);
-  color: var(--em-accent, #4c6ef5);
-}
-
 /* ─── Empty column placeholder ─── */
 .kb-empty-placeholder {
   text-align: center;
@@ -338,148 +381,6 @@ body.kb-dragging * {
   border: 2px dashed var(--em-border-light, #edf0f4);
   border-radius: var(--em-radius-sm, 6px);
   pointer-events: none;
-}
-
-/* ─── Detail Panel (slide-out from right) ─── */
-.kb-detail-panel {
-  position: fixed;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  z-index: 1000;
-  display: none;
-}
-
-.kb-detail-panel[aria-hidden="false"] {
-  display: flex;
-}
-
-.kb-detail-overlay {
-  position: absolute;
-  inset: 0;
-  background: rgba(15, 23, 42, 0.35);
-  cursor: pointer;
-}
-
-.kb-detail-content {
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  width: 500px;
-  max-width: 92vw;
-  background: var(--em-surface, #ffffff);
-  box-shadow: var(--em-shadow-lg, 0 8px 24px rgba(0,0,0,0.12));
-  padding: var(--em-space-lg, 24px);
-  overflow-y: auto;
-  transform: translateX(100%);
-  transition: transform 200ms ease-out;
-  z-index: 1;
-}
-
-.kb-detail-panel[aria-hidden="false"] .kb-detail-content {
-  transform: translateX(0);
-}
-
-.kb-detail-close {
-  position: absolute;
-  top: var(--em-space-md, 16px);
-  right: var(--em-space-md, 16px);
-  background: none;
-  border: 1px solid var(--em-border, #e2e8f0);
-  border-radius: var(--em-radius-xs, 4px);
-  width: 28px;
-  height: 28px;
-  font-size: 1.25rem;
-  line-height: 1;
-  cursor: pointer;
-  color: var(--em-text-secondary, #64748b);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background var(--em-transition, 150ms);
-}
-
-.kb-detail-close:hover {
-  background: var(--em-bg, #f1f3f5);
-}
-
-/* ─── Detail panel content ─── */
-.kb-detail-issue {
-  padding-top: var(--em-space-xs, 4px);
-}
-
-.kb-detail-header {
-  display: flex;
-  align-items: center;
-  gap: var(--em-space-sm, 8px);
-  margin-bottom: var(--em-space-sm, 8px);
-}
-
-.kb-detail-tracker {
-  font-size: 0.6875rem;
-  font-weight: 700;
-  color: var(--em-text-muted, #94a3b8);
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
-}
-
-.kb-detail-id a {
-  font-size: 0.8125rem;
-  font-weight: 700;
-  color: var(--em-accent, #4c6ef5);
-}
-
-.kb-detail-subject {
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--em-text, #1e293b);
-  margin: 0 0 var(--em-space-md, 16px) 0;
-  line-height: 1.4;
-  padding-right: 40px; /* avoid close button overlap */
-}
-
-.kb-detail-attrs {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 6px var(--em-space-md, 16px);
-  margin-bottom: var(--em-space-md, 16px);
-  font-size: 0.8125rem;
-}
-
-.kb-detail-attrs dt {
-  color: var(--em-text-secondary, #64748b);
-  font-weight: 600;
-  white-space: nowrap;
-}
-
-.kb-detail-attrs dd {
-  color: var(--em-text, #1e293b);
-  margin: 0;
-}
-
-.kb-detail-description {
-  border-top: 1px solid var(--em-border, #e2e8f0);
-  padding-top: var(--em-space-md, 16px);
-  margin-top: var(--em-space-md, 16px);
-}
-
-.kb-detail-description h4 {
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: var(--em-text-secondary, #64748b);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  margin: 0 0 var(--em-space-sm, 8px) 0;
-}
-
-.kb-detail-footer {
-  margin-top: var(--em-space-md, 16px);
-  padding-top: var(--em-space-md, 16px);
-  border-top: 1px solid var(--em-border, #e2e8f0);
-  display: flex;
-  gap: var(--em-space-sm, 8px);
 }
 
 /* ─── Toast Notifications (NO alert/confirm per project rules) ─── */
@@ -534,25 +435,10 @@ body.kb-dragging * {
     width: 240px;
     max-height: calc(100vh - 180px);
   }
-
-  .kb-detail-content {
-    width: 100%;
-    max-width: 100%;
-  }
 }
 
 @media print {
-  .kb-detail-panel,
-  .kb-notifications,
-  .kb-card-actions { display: none !important; }
-
-  .kb-columns {
-    flex-wrap: wrap;
-    min-width: unset;
-  }
-
-  .kb-column {
-    flex: 0 0 48%;
-    max-height: none;
-  }
+  .kb-notifications { display: none !important; }
+  .kb-columns { flex-wrap: wrap; min-width: unset; }
+  .kb-column { flex: 0 0 48%; max-height: none; }
 }

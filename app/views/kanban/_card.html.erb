@@ -1,6 +1,7 @@
 <div class="<%= kanban_card_classes(issue) %>"
      data-issue-id="<%= issue.id %>"
      data-allowed-statuses="<%= kanban_allowed_statuses_json(issue) %>"
+     data-issue-url="<%= issue_path(issue) %>"
      tabindex="0"
      role="article"
      aria-label="<%= "#{issue.tracker.name} ##{issue.id}: #{issue.subject}" %>">
@@ -15,18 +16,25 @@
 
   <div class="kb-card-header">
     <span class="kb-card-tracker-tag"><%= issue.tracker.name %></span>
-    <a href="<%= issue_path(issue) %>"
-       class="kb-card-id"
-       data-kb-detail="<%= issue.id %>"
-       title="<%= l(:label_issue) %> ##{issue.id} — <%= l(:label_card_detail) %>"
-       onclick="return false;">#<%= issue.id %></a>
+    <div class="kb-card-header-right">
+      <a href="<%= issue_path(issue) %>"
+         class="kb-card-id"
+         title="<%= "#{l(:label_issue)} ##{issue.id}" %>">#<%= issue.id %></a>
+      <button class="kb-card-menu-btn js-contextmenu"
+              type="button"
+              aria-label="<%= l(:button_actions) %>"
+              title="<%= l(:button_actions) %>">&#8942;</button>
+    </div>
   </div>
 
-  <div class="kb-card-subject"><%= issue.subject %></div>
+  <a href="<%= issue_path(issue) %>" class="kb-card-subject-link">
+    <div class="kb-card-subject"><%= issue.subject %></div>
+  </a>
 
   <div class="kb-card-footer">
     <div class="kb-card-meta">
       <%= kanban_priority_label(issue) %>
+      <%= kanban_subtask_badge(issue) %>
       <% if issue.due_date %>
         <span class="kb-card-due<%= ' kb-overdue' if issue.overdue? %>"
               title="<%= l(:field_due_date) %>: <%= format_date(issue.due_date) %>">
@@ -38,19 +46,4 @@
       <%= kanban_assignee_cell(issue.assigned_to) %>
     </div>
   </div>
-
-  <%# Accessible "Move to" alternative to drag-and-drop %>
-  <% allowed = issue.new_statuses_allowed_to(User.current) %>
-  <% if allowed.any? && User.current.allowed_to?(:manage_kanban, issue.project) %>
-    <div class="kb-card-actions" role="group" aria-label="<%= l(:label_move_to) %>">
-      <select class="kb-move-to"
-              aria-label="<%= l(:label_move_to) %>"
-              data-issue-id="<%= issue.id %>">
-        <option value=""><%= l(:label_move_to) %></option>
-        <% allowed.each do |s| %>
-          <option value="<%= s.id %>"><%= s.name %></option>
-        <% end %>
-      </select>
-    </div>
-  <% end %>
 </div>

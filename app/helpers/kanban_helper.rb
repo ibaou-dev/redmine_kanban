@@ -32,11 +32,19 @@ module KanbanHelper
     end
   end
 
-  def kanban_update_status_url(project, issue)
-    if project
-      project_kanban_update_status_path(project, issue)
-    else
-      "/kanban/issues/#{issue.id}/update_status"
-    end
+  def kanban_subtask_badge(issue)
+    counts = @subtask_counts&.dig(issue.id)
+    return ''.html_safe unless counts
+
+    done  = counts[:done]
+    total = counts[:total]
+    css   = if done == total then 'kb-subtasks-done'
+            elsif done == 0  then 'kb-subtasks-none'
+            else                  'kb-subtasks-partial'
+            end
+    label = done == total ? "&#10003; #{done}/#{total}" : "#{done}/#{total}"
+    content_tag(:span, label.html_safe,
+      class: "kb-subtask-badge #{css}",
+      title: "#{done} of #{total} subtasks closed")
   end
 end

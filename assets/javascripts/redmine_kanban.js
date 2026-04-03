@@ -11,11 +11,6 @@
     return meta ? meta.content : '';
   }
 
-  function getProjectIdentifier() {
-    var container = document.getElementById('kb-board-container');
-    return container ? container.dataset.projectId : null;
-  }
-
   function getUpdateBaseUrl() {
     var container = document.getElementById('kb-board-container');
     return container ? container.dataset.updateBase : '/kanban/issues';
@@ -23,10 +18,6 @@
 
   function updateStatusUrl(issueId) {
     return getUpdateBaseUrl() + '/' + issueId + '/update_status';
-  }
-
-  function detailUrl(issueId) {
-    return getUpdateBaseUrl() + '/' + issueId + '/detail';
   }
 
   // ─── Toasts (NO alert/confirm) ───────────────────────────────
@@ -39,7 +30,6 @@
     toast.textContent = message;
     container.appendChild(toast);
 
-    // Auto-dismiss
     setTimeout(function () {
       toast.classList.add('kb-toast-fade');
       setTimeout(function () {
@@ -48,12 +38,13 @@
     }, 4000);
   }
 
-  // ─── Column Counts & WIP ─────────────────────────────────────
+  // ─── Column Counts, WIP & Placeholders ──────────────────────
   function refreshColumnCounts() {
     document.querySelectorAll('.kb-column').forEach(function (col) {
       var body  = col.querySelector('.kb-column-body');
       if (!body) return;
-      var count    = body.querySelectorAll('.kb-card').length;
+      var cards    = body.querySelectorAll('.kb-card');
+      var count    = cards.length;
       var wipLimit = parseInt(col.dataset.wipLimit, 10) || 0;
       var exceeded = wipLimit > 0 && count > wipLimit;
 
@@ -62,8 +53,13 @@
         countEl.textContent = wipLimit > 0 ? count + '/' + wipLimit : String(count);
         countEl.classList.toggle('kb-count-exceeded', exceeded);
       }
-
       col.classList.toggle('kb-column-wip-exceeded', exceeded);
+
+      // Fix 1: show/hide empty placeholder based on actual card count
+      var placeholder = body.querySelector('.kb-empty-placeholder');
+      if (placeholder) {
+        placeholder.style.display = count > 0 ? 'none' : '';
+      }
     });
   }
 
@@ -101,6 +97,10 @@
       try { resp = JSON.parse(xhr.responseText); } catch (e) { resp = {}; }
 
       if (xhr.status >= 200 && xhr.status < 300 && resp.success) {
+        // Fix 2: sync kb-closed class with the column the card now lives in
+        var targetCol = card.closest('.kb-column');
+        card.classList.toggle('kb-closed', !!resp.is_closed);
+
         refreshColumnCounts();
         showToast('success', resp.message || 'Status updated.');
       } else {
@@ -135,7 +135,8 @@
         animation:    150,
         ghostClass:   'kb-card-ghost',
         chosenClass:  'kb-card-chosen',
-        filter:       '.kb-move-to, .kb-card-actions, .kb-card-id',
+        // Fix 6 (remove move-to): no longer need to filter it out
+        filter:       '.kb-card-menu-btn, .kb-card-id, .kb-card-subject-link',
         preventOnFilter: false,
         fallbackOnBody: true,
         swapThreshold: 0.65,
@@ -149,15 +150,13 @@
           document.body.classList.remove('kb-dragging');
           clearTargetHighlights();
 
-          // No movement
           if (evt.from === evt.to && evt.oldIndex === evt.newIndex) return;
 
-          var card         = evt.item;
-          var newStatusId  = evt.to.dataset.statusId;
-          var allowed      = (card.dataset.allowedStatuses || '').split(',').filter(Boolean);
+          var card        = evt.item;
+          var newStatusId = evt.to.dataset.statusId;
+          var allowed     = (card.dataset.allowedStatuses || '').split(',').filter(Boolean);
 
           if (allowed.indexOf(String(newStatusId)) === -1) {
-            // Snap back immediately
             var ref = evt.from.children[evt.oldIndex] || null;
             evt.from.insertBefore(card, ref);
             refreshColumnCounts();
@@ -165,98 +164,50 @@
             return;
           }
 
-          var fromCol  = evt.from;
-          var oldIndex = evt.oldIndex;
-          performUpdate(card.dataset.issueId, newStatusId, card, fromCol, oldIndex);
+          performUpdate(card.dataset.issueId, newStatusId, card, evt.from, evt.oldIndex);
         }
       });
     });
   }
 
-  // ─── "Move to..." dropdown ───────────────────────────────────
-  function initMoveToDropdowns() {
-    document.addEventListener('change', function (e) {
-      if (!e.target.classList.contains('kb-move-to')) return;
-
-      var select      = e.target;
-      var newStatusId = select.value;
-      if (!newStatusId) return;
-
-      var card    = select.closest('.kb-card');
-      var issueId = card.dataset.issueId;
-      var fromCol = card.parentElement;
-      var oldIdx  = Array.from(fromCol.children).indexOf(card);
-
-      // Optimistic: move card DOM to target column
-      var targetBody = document.querySelector(
-        '.kb-column-body[data-status-id="' + newStatusId + '"]'
-      );
-      if (targetBody) {
-        targetBody.appendChild(card);
-        refreshColumnCounts();
-      }
-
-      select.value = ''; // Reset dropdown
-      performUpdate(issueId, newStatusId, card, fromCol, oldIdx);
-    });
-  }
-
-  // ─── Detail Panel ────────────────────────────────────────────
-  function openDetailPanel(issueId) {
-    var panel = document.getElementById('kb-detail-panel');
-    var body  = document.getElementById('kb-detail-body');
-    if (!panel || !body) return;
-
-    body.innerHTML = '<p style="color:var(--em-text-muted,#94a3b8);padding:8px">Loading\u2026</p>';
-    panel.setAttribute('aria-hidden', 'false');
-    panel.focus && panel.focus();
-
-    var xhr = new XMLHttpRequest();
-    xhr.open('GET', detailUrl(issueId), true);
-    xhr.setRequestHeader('Accept', 'text/html');
-    xhr.onload = function () {
-      body.innerHTML = xhr.responseText;
-    };
-    xhr.onerror = function () {
-      body.innerHTML = '<p style="color:var(--em-error,#e03131)">Failed to load issue.</p>';
-    };
-    xhr.send();
-  }
-
-  function closeDetailPanel() {
-    var panel = document.getElementById('kb-detail-panel');
-    if (panel) panel.setAttribute('aria-hidden', 'true');
-  }
-
-  function initDetailPanel() {
+  // ─── Feature 4: Three-dot context menu button ────────────────
+  // The .js-contextmenu class is already wired in Redmine's context_menu.js
+  // (contextMenuRightClick fires on click of .js-contextmenu elements).
+  // We just need to check the card's hidden checkbox first so the right
+  // issue gets serialised into the context menu AJAX call.
+  function initContextMenu() {
     document.addEventListener('click', function (e) {
-      // Open on card #id click
-      var link = e.target.closest('[data-kb-detail]');
-      if (link) {
-        e.preventDefault();
-        openDetailPanel(link.dataset.kbDetail);
-        return;
-      }
+      var card = e.target.closest('.kb-card');
+      if (!card) return;
 
-      // Close on overlay click
-      if (e.target.classList.contains('kb-detail-overlay')) {
-        closeDetailPanel();
-        return;
-      }
+      // For any click on a card, pre-select it for the context menu
+      // (needed both for right-click and for the ⋮ button)
+      document.querySelectorAll('.kb-card-checkbox').forEach(function (cb) {
+        cb.checked = false;
+        cb.closest('.kb-card').classList.remove('context-menu-selection');
+      });
 
-      // Close on X button
-      if (e.target.classList.contains('kb-detail-close')) {
-        closeDetailPanel();
-        return;
+      var cb = card.querySelector('.kb-card-checkbox');
+      if (cb) {
+        cb.checked = true;
+        card.classList.add('context-menu-selection');
       }
     });
 
-    document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape') {
-        var panel = document.getElementById('kb-detail-panel');
-        if (panel && panel.getAttribute('aria-hidden') === 'false') {
-          closeDetailPanel();
-        }
+    // Right-click: also pre-select
+    document.addEventListener('contextmenu', function (e) {
+      var card = e.target.closest('.kb-card');
+      if (!card) return;
+
+      document.querySelectorAll('.kb-card-checkbox').forEach(function (cb) {
+        cb.checked = false;
+        cb.closest('.kb-card').classList.remove('context-menu-selection');
+      });
+
+      var cb = card.querySelector('.kb-card-checkbox');
+      if (cb) {
+        cb.checked = true;
+        card.classList.add('context-menu-selection');
       }
     });
   }
@@ -307,35 +258,13 @@
           break;
         }
 
+        // Feature 8: Enter navigates to issue page
         case 'Enter':
         case ' ':
           e.preventDefault();
-          var detailLink = focused.querySelector('[data-kb-detail]');
-          if (detailLink) openDetailPanel(detailLink.dataset.kbDetail);
+          var url = focused.dataset.issueUrl;
+          if (url) window.location.href = url;
           break;
-      }
-    });
-  }
-
-  // ─── Context Menu Integration ─────────────────────────────────
-  // Redmine's contextMenuInit() selects rows with class "hascontextmenu".
-  // Cards each have a hidden checkbox[name="ids[]"]. On right-click we
-  // check the right card so the built-in AJAX context menu fires correctly.
-  function initContextMenu() {
-    document.addEventListener('contextmenu', function (e) {
-      var card = e.target.closest('.kb-card');
-      if (!card) return;
-
-      // Deselect all, select this one
-      document.querySelectorAll('.kb-card-checkbox').forEach(function (cb) {
-        cb.checked = false;
-        cb.closest('.kb-card').classList.remove('context-menu-selection');
-      });
-
-      var cb = card.querySelector('.kb-card-checkbox');
-      if (cb) {
-        cb.checked = true;
-        card.classList.add('context-menu-selection');
       }
     });
   }
@@ -345,11 +274,9 @@
     if (!document.getElementById('kb-board-container')) return;
 
     initSortable();
-    initMoveToDropdowns();
-    initDetailPanel();
-    initKeyboardNav();
     initContextMenu();
-    refreshColumnCounts();
+    initKeyboardNav();
+    refreshColumnCounts(); // also sets initial placeholder state
   }
 
   if (document.readyState === 'loading') {

@@ -1,7 +1,7 @@
 class KanbanController < ApplicationController
   before_action :find_optional_project
-  before_action :authorize,        only: [:show, :card_detail], if: -> { @project.present? }
-  before_action :authorize_global, only: [:show, :card_detail], if: -> { @project.nil? }
+  before_action :authorize,        only: [:show], if: -> { @project.present? }
+  before_action :authorize_global, only: [:show], if: -> { @project.nil? }
 
   helper :queries
   include QueriesHelper
@@ -16,9 +16,10 @@ class KanbanController < ApplicationController
         include: [:status, :tracker, :priority, :assigned_to, :project, :author],
         limit:   500
       )
-      @statuses  = available_statuses
-      @columns   = build_columns(@issues, @statuses)
-      @wip_limits = {}
+      @statuses     = available_statuses
+      @columns      = build_columns(@issues, @statuses)
+      @wip_limits   = {}
+      @subtask_counts = build_subtask_counts(@issues)
     end
 
     respond_to do |format|
@@ -55,6 +56,7 @@ class KanbanController < ApplicationController
         success:   true,
         issue_id:  @issue.id,
         status_id: @issue.status_id,
+        is_closed: @issue.status.is_closed?,
         message:   l(:notice_kanban_status_updated)
       }
     else
@@ -66,13 +68,6 @@ class KanbanController < ApplicationController
   rescue ActiveRecord::RecordNotFound
     render json: { success: false, error: l(:error_kanban_issue_not_found) },
            status: :not_found
-  end
-
-  def card_detail
-    @issue = Issue.visible.find(params[:id])
-    render partial: 'card_detail', locals: { issue: @issue }, layout: false
-  rescue ActiveRecord::RecordNotFound
-    head :not_found
   end
 
   private
@@ -88,6 +83,21 @@ class KanbanController < ApplicationController
     else
       IssueStatus.sorted
     end
+  end
+
+  def build_subtask_counts(issues)
+    parent_ids = issues.reject(&:leaf?).map(&:id)
+    return {} if parent_ids.empty?
+
+    Issue.where(parent_id: parent_ids)
+         .joins(:status)
+         .group(:parent_id)
+         .pluck(
+           :parent_id,
+           Arel.sql('COUNT(*)'),
+           Arel.sql("SUM(CASE WHEN #{IssueStatus.table_name}.is_closed = #{Issue.connection.quoted_true} THEN 1 ELSE 0 END)")
+         )
+         .each_with_object({}) { |(pid, total, done), h| h[pid] = { total: total, done: done.to_i } }
   end
 
   def build_columns(issues, statuses)
