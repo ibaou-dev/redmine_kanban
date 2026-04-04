@@ -98,8 +98,8 @@ class KanbanController < ApplicationController
       IssueStatus.sorted
     end
 
-    if @project && KanbanColumnConfig.table_exists?
-      configs = KanbanColumnConfig.where(project: @project).to_a
+    if @project && ::KanbanColumnConfig.table_exists?
+      configs = ::KanbanColumnConfig.where(project: @project).to_a
       if configs.any?
         visible_ids = configs.select(&:visible).map(&:status_id).to_set
         pos_map     = configs.each_with_object({}) { |c, h| h[c.status_id] = c.position }
@@ -112,8 +112,8 @@ class KanbanController < ApplicationController
   end
 
   def load_wip_limits
-    return {} unless @project && KanbanColumnConfig.table_exists?
-    KanbanColumnConfig.where(project: @project)
+    return {} unless @project && ::KanbanColumnConfig.table_exists?
+    ::KanbanColumnConfig.where(project: @project)
                       .each_with_object({}) { |c, h| h[c.status_id] = c.wip_limit if c.wip_limit }
   end
 

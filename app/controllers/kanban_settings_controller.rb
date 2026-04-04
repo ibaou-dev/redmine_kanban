@@ -4,7 +4,7 @@ class KanbanSettingsController < ApplicationController
 
   def update
     (params[:column_configs] || {}).each do |status_id, attrs|
-      config = KanbanColumnConfig.find_or_initialize_by(
+      config = ::KanbanColumnConfig.find_or_initialize_by(
         project_id: @project.id,
         status_id:  status_id.to_i
       )
