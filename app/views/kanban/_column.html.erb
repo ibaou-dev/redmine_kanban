@@ -1,8 +1,9 @@
 <%
-  wip_exceeded = wip_limit.present? && wip_limit.to_i > 0 && count > wip_limit.to_i
-  col_classes  = ['kb-column']
-  col_classes << 'kb-column-closed'       if closed
-  col_classes << 'kb-column-wip-exceeded' if wip_exceeded
+  global_count  = local_assigns[:global_count] || count
+  wip_exceeded  = wip_limit.present? && wip_limit.to_i > 0 && global_count > wip_limit.to_i
+  col_classes   = ['kb-column']
+  col_classes  << 'kb-column-closed'       if closed
+  col_classes  << 'kb-column-wip-exceeded' if wip_exceeded
 %>
 <div class="<%= col_classes.join(' ') %>"
      data-status-id="<%= status.id %>"

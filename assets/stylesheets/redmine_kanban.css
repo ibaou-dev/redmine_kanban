@@ -36,7 +36,6 @@
               background var(--em-transition, 150ms);
 }
 
-/* Fix 2: dim only the cards in a closed column, not the header */
 .kb-column-closed .kb-card {
   opacity: 0.6;
 }
@@ -152,9 +151,7 @@ body.kb-dragging * {
   user-select: none;
 }
 
-.kb-card:last-child {
-  margin-bottom: 0;
-}
+.kb-card:last-child { margin-bottom: 0; }
 
 .kb-card:hover {
   box-shadow: var(--em-shadow-md, 0 4px 12px rgba(0,0,0,0.08));
@@ -165,14 +162,38 @@ body.kb-dragging * {
               var(--em-shadow-sm, 0 1px 3px rgba(0,0,0,0.08));
 }
 
-/* Fix 2: kb-closed class is toggled by JS on drag, and set server-side at load */
-.kb-card.kb-closed {
-  opacity: 0.55;
-}
+.kb-card.kb-closed { opacity: 0.55; }
 
 .kb-card.kb-overdue .kb-card-due {
   color: var(--em-error, #e03131);
   font-weight: 600;
+}
+
+/* ─── Blocked card ─── */
+.kb-card.kb-blocked {
+  border-left-color: var(--em-error, #e03131);
+}
+
+.kb-blocked-icon {
+  font-size: 0.75rem;
+  cursor: help;
+}
+
+/* ─── Card loading spinner ─── */
+.kb-card-loading {
+  pointer-events: none;
+}
+
+.kb-card-loading::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(255,255,255,0.7);
+  border-radius: var(--em-radius, 8px);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='10' fill='none' stroke='%234c6ef5' stroke-width='2.5' stroke-dasharray='16 48' stroke-linecap='round'%3E%3CanimateTransform attributeName='transform' type='rotate' dur='0.7s' repeatCount='indefinite' from='0 12 12' to='360 12 12'/%3E%3C/circle%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: center;
+  z-index: 5;
 }
 
 /* ─── Priority border-left colors ─── */
@@ -199,7 +220,6 @@ body.kb-dragging * {
   flex: 1;
 }
 
-/* Feature 4: right side of header groups #id + ⋮ button */
 .kb-card-header-right {
   display: flex;
   align-items: center;
@@ -215,11 +235,9 @@ body.kb-dragging * {
   white-space: nowrap;
 }
 
-.kb-card-id:hover {
-  text-decoration: underline;
-}
+.kb-card-id:hover { text-decoration: underline; }
 
-/* Feature 4: three-dot context menu button */
+/* Three-dot context menu button */
 .kb-card-menu-btn {
   background: none;
   border: 1px solid transparent;
@@ -243,9 +261,7 @@ body.kb-dragging * {
 
 .kb-card:hover .kb-card-menu-btn,
 .kb-card:focus .kb-card-menu-btn,
-.kb-card:focus-within .kb-card-menu-btn {
-  opacity: 1;
-}
+.kb-card:focus-within .kb-card-menu-btn { opacity: 1; }
 
 .kb-card-menu-btn:hover {
   background: var(--em-bg, #f1f3f5);
@@ -253,24 +269,25 @@ body.kb-dragging * {
   color: var(--em-text, #1e293b);
 }
 
-/* Context menu selection highlight on cards —
-   override the theme's solid-blue row treatment with a subtle ring */
+/* Context menu selection — override theme's solid-blue table-row treatment */
 .kb-card.context-menu-selection {
   background: var(--em-surface, #ffffff) !important;
   box-shadow: 0 0 0 2px var(--em-accent, #4c6ef5),
               var(--em-shadow-sm, 0 1px 3px rgba(0,0,0,0.08)) !important;
   color: var(--em-text, #1e293b) !important;
 }
+
 .kb-card.context-menu-selection:hover {
   background: var(--em-surface, #ffffff) !important;
   color: var(--em-text, #1e293b) !important;
 }
+
 .kb-card.context-menu-selection a,
 .kb-card.context-menu-selection a:hover {
   color: var(--em-accent, #4c6ef5) !important;
 }
 
-/* Fix 3 + Feature 8: clickable subject link */
+/* ─── Clickable subject link ─── */
 .kb-card-subject-link {
   display: block;
   text-decoration: none;
@@ -292,6 +309,34 @@ body.kb-dragging * {
   -webkit-box-orient: vertical;
   overflow: hidden;
   transition: color var(--em-transition, 150ms);
+}
+
+/* ─── Description snippet (detailed zoom only) ─── */
+.kb-card-description {
+  font-size: 0.75rem;
+  color: var(--em-text-secondary, #64748b);
+  line-height: 1.4;
+  margin: 4px 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ─── Progress bar ─── */
+.kb-card-progress {
+  height: 4px;
+  background: var(--em-border, #e2e8f0);
+  border-radius: 2px;
+  margin: 4px 0;
+  overflow: hidden;
+}
+
+.kb-card-progress-bar {
+  height: 100%;
+  background: var(--em-success, #12b886);
+  border-radius: 2px;
+  transition: width 300ms;
 }
 
 /* ─── Card Footer ─── */
@@ -332,7 +377,7 @@ body.kb-dragging * {
   border: 1px solid #bac8ff;
 }
 
-/* Feature 5: Subtask progress badge */
+/* ─── Subtask progress badge ─── */
 .kb-subtask-badge {
   font-size: 0.625rem;
   font-weight: 700;
@@ -342,34 +387,25 @@ body.kb-dragging * {
   cursor: help;
 }
 
-.kb-subtasks-done {
-  background: #e6fcf5;
-  color: #087f5b;
-  border: 1px solid #96f2d7;
-}
-
-.kb-subtasks-partial {
-  background: var(--em-accent-light, #edf2ff);
-  color: var(--em-accent, #4c6ef5);
-  border: 1px solid #bac8ff;
-}
-
-.kb-subtasks-none {
-  background: var(--em-bg-alt, #f8f9fa);
-  color: var(--em-text-muted, #94a3b8);
-  border: 1px solid var(--em-border, #e2e8f0);
-}
+.kb-subtasks-done    { background: #e6fcf5; color: #087f5b; border: 1px solid #96f2d7; }
+.kb-subtasks-partial { background: var(--em-accent-light, #edf2ff); color: var(--em-accent, #4c6ef5); border: 1px solid #bac8ff; }
+.kb-subtasks-none    { background: var(--em-bg-alt, #f8f9fa); color: var(--em-text-muted, #94a3b8); border: 1px solid var(--em-border, #e2e8f0); }
 
 .kb-card-due {
   font-size: 0.6875rem;
   color: var(--em-text-muted, #94a3b8);
 }
 
-/* ─── Assignee avatar ─── */
-.kb-card-right {
-  display: flex;
-  align-items: center;
+/* Detailed-mode meta items */
+.kb-card-version,
+.kb-card-attachments {
+  font-size: 0.625rem;
+  color: var(--em-text-muted, #94a3b8);
+  white-space: nowrap;
 }
+
+/* ─── Assignee avatar ─── */
+.kb-card-right { display: flex; align-items: center; }
 
 .kb-assignee-avatar {
   width: 22px;
@@ -382,11 +418,7 @@ body.kb-dragging * {
   cursor: help;
 }
 
-.kb-assignee-avatar img {
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-}
+.kb-assignee-avatar img { width: 22px; height: 22px; border-radius: 50%; }
 
 .kb-unassigned {
   background: var(--em-border, #e2e8f0);
@@ -407,7 +439,185 @@ body.kb-dragging * {
   pointer-events: none;
 }
 
-/* ─── Toast Notifications (NO alert/confirm per project rules) ─── */
+/* ─── Board controls bar (group-by, zoom, search) ─── */
+.kb-board-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--em-space-sm, 8px);
+  margin-left: var(--em-space-md, 16px);
+  vertical-align: middle;
+}
+
+.kb-control-label {
+  font-size: 0.75rem;
+  color: var(--em-text-secondary, #64748b);
+  white-space: nowrap;
+}
+
+.kb-groupby-select {
+  font-size: 0.8125rem;
+  padding: 3px 6px;
+  border: 1px solid var(--em-border, #e2e8f0);
+  border-radius: var(--em-radius-xs, 4px);
+  background: var(--em-surface, #fff);
+  color: var(--em-text, #1e293b);
+}
+
+/* ─── Zoom toggle buttons ─── */
+.kb-zoom-controls {
+  display: inline-flex;
+  gap: 2px;
+  align-items: center;
+}
+
+.kb-zoom-btn {
+  background: var(--em-surface, #fff);
+  border: 1px solid var(--em-border, #e2e8f0);
+  border-radius: var(--em-radius-xs, 4px);
+  padding: 3px 7px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  color: var(--em-text-secondary, #64748b);
+  transition: background var(--em-transition, 150ms),
+              border-color var(--em-transition, 150ms),
+              color var(--em-transition, 150ms);
+}
+
+.kb-zoom-btn:hover {
+  background: var(--em-bg, #f1f3f5);
+  border-color: var(--em-accent, #4c6ef5);
+  color: var(--em-accent, #4c6ef5);
+}
+
+.kb-zoom-btn.kb-zoom-active {
+  background: var(--em-accent-light, #edf2ff);
+  border-color: var(--em-accent, #4c6ef5);
+  color: var(--em-accent, #4c6ef5);
+  font-weight: 600;
+}
+
+/* ─── Quick search ─── */
+.kb-search-input {
+  font-size: 0.8125rem;
+  padding: 3px 8px;
+  border: 1px solid var(--em-border, #e2e8f0);
+  border-radius: var(--em-radius-xs, 4px);
+  background: var(--em-surface, #fff);
+  color: var(--em-text, #1e293b);
+  width: 160px;
+  transition: border-color var(--em-transition, 150ms),
+              box-shadow var(--em-transition, 150ms);
+}
+
+.kb-search-input:focus {
+  outline: none;
+  border-color: var(--em-accent, #4c6ef5);
+  box-shadow: 0 0 0 2px rgba(76,110,245,0.15);
+}
+
+/* ─── Zoom levels ─── */
+
+/* Compact: header only, no footer, no subject clip */
+#kb-board-container.kb-zoom-compact .kb-card {
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
+#kb-board-container.kb-zoom-compact .kb-card-subject {
+  font-size: 0.75rem;
+  -webkit-line-clamp: 1;
+  margin-bottom: 0;
+}
+
+#kb-board-container.kb-zoom-compact .kb-card-tracker-tag,
+#kb-board-container.kb-zoom-compact .kb-card-footer,
+#kb-board-container.kb-zoom-compact .kb-card-progress {
+  display: none;
+}
+
+/* Detailed: show everything */
+#kb-board-container.kb-zoom-detailed .kb-card-subject {
+  -webkit-line-clamp: 3;
+}
+
+/* kb-detail-only: hidden in compact + normal, shown in detailed */
+.kb-detail-only { display: none; }
+#kb-board-container.kb-zoom-detailed .kb-detail-only { display: block; }
+
+/* kb-normal-up: hidden in compact, shown in normal + detailed */
+.kb-normal-up { display: block; }
+#kb-board-container.kb-zoom-compact .kb-normal-up { display: none; }
+
+/* ─── Truncation warning ─── */
+.kb-truncation-warning {
+  margin-bottom: var(--em-space-sm, 8px);
+}
+
+/* ─── Settings table ─── */
+.kb-settings-pos,
+.kb-settings-wip {
+  width: 52px;
+  text-align: center;
+}
+
+/* ─── Swimlanes ─── */
+.kb-swimlane {
+  margin-bottom: var(--em-space-md, 16px);
+}
+
+.kb-swimlane-header {
+  display: flex;
+  align-items: center;
+  gap: var(--em-space-xs, 4px);
+  padding: 6px var(--em-space-sm, 8px);
+  background: var(--em-bg, #f1f3f5);
+  border: 1px solid var(--em-border, #e2e8f0);
+  border-radius: var(--em-radius, 8px);
+  cursor: pointer;
+  user-select: none;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--em-text, #1e293b);
+  margin-bottom: var(--em-space-xs, 4px);
+  transition: background var(--em-transition, 150ms);
+}
+
+.kb-swimlane-header:hover {
+  background: var(--em-accent-light, #edf2ff);
+}
+
+.kb-swimlane-toggle {
+  flex-shrink: 0;
+  color: var(--em-text-muted, #94a3b8);
+}
+
+.kb-swimlane-label { flex: 1; }
+
+.kb-swimlane-count {
+  background: var(--em-border, #e2e8f0);
+  color: var(--em-text-secondary, #64748b);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  padding: 1px 7px;
+  border-radius: 100px;
+}
+
+.kb-swimlane-body {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.kb-swimlane-collapsed .kb-swimlane-body {
+  display: none;
+}
+
+/* Swimlane column height is shorter than standalone board */
+.kb-swimlane .kb-column {
+  max-height: calc(50vh - 80px);
+  min-height: 80px;
+}
+
+/* ─── Toast Notifications ─── */
 .kb-notifications {
   position: fixed;
   bottom: var(--em-space-lg, 24px);
@@ -431,21 +641,9 @@ body.kb-dragging * {
   transition: opacity 300ms;
 }
 
-.kb-toast-success {
-  background: #e6fcf5;
-  color: #087f5b;
-  border: 1px solid #96f2d7;
-}
-
-.kb-toast-error {
-  background: #fff5f5;
-  color: var(--em-error, #e03131);
-  border: 1px solid #ffc9c9;
-}
-
-.kb-toast-fade {
-  opacity: 0;
-}
+.kb-toast-success { background: #e6fcf5; color: #087f5b; border: 1px solid #96f2d7; }
+.kb-toast-error   { background: #fff5f5; color: var(--em-error, #e03131); border: 1px solid #ffc9c9; }
+.kb-toast-fade    { opacity: 0; }
 
 @keyframes kb-toast-in {
   from { transform: translateY(12px); opacity: 0; }
@@ -459,10 +657,14 @@ body.kb-dragging * {
     width: 240px;
     max-height: calc(100vh - 180px);
   }
+  .kb-board-controls { flex-wrap: wrap; }
+  .kb-search-input { width: 120px; }
 }
 
 @media print {
   .kb-notifications { display: none !important; }
+  .kb-board-controls { display: none !important; }
   .kb-columns { flex-wrap: wrap; min-width: unset; }
   .kb-column { flex: 0 0 48%; max-height: none; }
+  .kb-swimlane-collapsed .kb-swimlane-body { display: block !important; }
 }

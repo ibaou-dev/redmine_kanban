@@ -1,4 +1,4 @@
-/* redmine_kanban.js — Kanban Board Frontend
+/* redmine_kanban.js — Kanban Board Frontend v0.2.0
  * Requires: SortableJS (loaded before this file)
  * Compatible with: Redmine 5+, jQuery 3.7+, ibaou-modern theme
  */
@@ -20,7 +20,7 @@
     return getUpdateBaseUrl() + '/' + issueId + '/update_status';
   }
 
-  // ─── Toasts (NO alert/confirm) ───────────────────────────────
+  // ─── Toasts ─────────────────────────────────────────────────
   function showToast(type, message) {
     var container = document.getElementById('kb-notifications');
     if (!container) return;
@@ -41,12 +41,17 @@
   // ─── Column Counts, WIP & Placeholders ──────────────────────
   function refreshColumnCounts() {
     document.querySelectorAll('.kb-column').forEach(function (col) {
-      var body  = col.querySelector('.kb-column-body');
+      var body = col.querySelector('.kb-column-body');
       if (!body) return;
-      var cards    = body.querySelectorAll('.kb-card');
-      var count    = cards.length;
-      var wipLimit = parseInt(col.dataset.wipLimit, 10) || 0;
-      var exceeded = wipLimit > 0 && count > wipLimit;
+
+      // Count only visible (non-search-hidden) cards
+      var cards     = body.querySelectorAll('.kb-card');
+      var visible   = Array.from(cards).filter(function (c) {
+        return c.style.display !== 'none';
+      });
+      var count     = visible.length;
+      var wipLimit  = parseInt(col.dataset.wipLimit, 10) || 0;
+      var exceeded  = wipLimit > 0 && count > wipLimit;
 
       var countEl = col.querySelector('.kb-column-count');
       if (countEl) {
@@ -55,7 +60,6 @@
       }
       col.classList.toggle('kb-column-wip-exceeded', exceeded);
 
-      // Fix 1: show/hide empty placeholder based on actual card count
       var placeholder = body.querySelector('.kb-empty-placeholder');
       if (placeholder) {
         placeholder.style.display = count > 0 ? 'none' : '';
@@ -84,9 +88,16 @@
     });
   }
 
+  // ─── Loading spinner on card ─────────────────────────────────
+  function setCardLoading(card, loading) {
+    card.classList.toggle('kb-card-loading', loading);
+  }
+
   // ─── AJAX Status Update ──────────────────────────────────────
   function performUpdate(issueId, newStatusId, card, fromCol, oldIndex) {
     var wasClosed = fromCol.closest('.kb-column').classList.contains('kb-column-closed');
+
+    setCardLoading(card, true);
 
     var xhr = new XMLHttpRequest();
     xhr.open('PATCH', updateStatusUrl(issueId), true);
@@ -95,6 +106,7 @@
     xhr.setRequestHeader('X-CSRF-Token', getCsrfToken());
 
     xhr.onload = function () {
+      setCardLoading(card, false);
       var resp;
       try { resp = JSON.parse(xhr.responseText); } catch (e) { resp = {}; }
 
@@ -112,6 +124,7 @@
     };
 
     xhr.onerror = function () {
+      setCardLoading(card, false);
       var ref = fromCol.children[oldIndex] || null;
       fromCol.insertBefore(card, ref);
       refreshColumnCounts();
@@ -123,7 +136,7 @@
 
   // ─── Live subtask badge refresh ──────────────────────────────
   function refreshParentBadge(card, wasClosed, isClosed) {
-    if (wasClosed === isClosed) return; // no closed-state change
+    if (wasClosed === isClosed) return;
 
     var parentId = card.dataset.parentId;
     if (!parentId) return;
@@ -134,8 +147,7 @@
     var badge = parentCard.querySelector('.kb-subtask-badge');
     if (!badge) return;
 
-    // Parse current "done/total" or "✓ done/total" from badge text
-    var text = badge.textContent.trim();
+    var text  = badge.textContent.trim();
     var match = text.match(/(\d+)\s*\/\s*(\d+)/);
     if (!match) return;
 
@@ -143,17 +155,16 @@
     var total = parseInt(match[2], 10);
 
     if (!wasClosed && isClosed)  done = Math.min(done + 1, total);
-    if (wasClosed && !isClosed)  done = Math.max(done - 1, 0);
+    if (wasClosed  && !isClosed) done = Math.max(done - 1, 0);
 
-    // Update badge text and class
     var label = done === total ? '\u2713 ' + done + '/' + total : done + '/' + total;
     badge.textContent = label;
     badge.title = done + ' of ' + total + ' subtasks closed';
 
     badge.classList.remove('kb-subtasks-done', 'kb-subtasks-partial', 'kb-subtasks-none');
-    if (done === total)    badge.classList.add('kb-subtasks-done');
-    else if (done === 0)   badge.classList.add('kb-subtasks-none');
-    else                   badge.classList.add('kb-subtasks-partial');
+    if (done === total)  badge.classList.add('kb-subtasks-done');
+    else if (done === 0) badge.classList.add('kb-subtasks-none');
+    else                 badge.classList.add('kb-subtasks-partial');
   }
 
   // ─── SortableJS Initialization ───────────────────────────────
@@ -165,15 +176,14 @@
 
     document.querySelectorAll('.kb-column-body').forEach(function (colBody) {
       Sortable.create(colBody, {
-        group:        { name: 'kanban', pull: true, put: true },
-        animation:    150,
-        ghostClass:   'kb-card-ghost',
-        chosenClass:  'kb-card-chosen',
-        // Fix 6 (remove move-to): no longer need to filter it out
-        filter:       '.kb-card-menu-btn, .kb-card-id, .kb-card-subject-link',
+        group:           { name: 'kanban', pull: true, put: true },
+        animation:       150,
+        ghostClass:      'kb-card-ghost',
+        chosenClass:     'kb-card-chosen',
+        filter:          '.kb-card-menu-btn, .kb-card-id, .kb-card-subject-link',
         preventOnFilter: false,
-        fallbackOnBody: true,
-        swapThreshold: 0.65,
+        fallbackOnBody:  true,
+        swapThreshold:   0.65,
 
         onStart: function (evt) {
           document.body.classList.add('kb-dragging');
@@ -198,6 +208,18 @@
             return;
           }
 
+          // Blocked: prevent drag to closed columns
+          var toColClosed = evt.to.closest('.kb-column') &&
+                            evt.to.closest('.kb-column').classList.contains('kb-column-closed');
+          if (card.dataset.blocked === 'true' && toColClosed) {
+            var ref2 = evt.from.children[evt.oldIndex] || null;
+            evt.from.insertBefore(card, ref2);
+            refreshColumnCounts();
+            showToast('error', card.dataset.blockedMsg ||
+              'This issue is blocked by an open issue and cannot be closed.');
+            return;
+          }
+
           performUpdate(card.dataset.issueId, newStatusId, card, evt.from, evt.oldIndex);
         }
       });
@@ -206,9 +228,89 @@
 
   // ─── Context Menu ─────────────────────────────────────────────
   // Each .kb-card has .hascontextmenu so Redmine's built-in context_menu.js
-  // handles right-click and .js-contextmenu click natively — selection,
-  // checkbox toggling, and menu display all work out of the box.
-  // Nothing extra needed here.
+  // handles right-click and .js-contextmenu click natively.
+
+  // ─── Card Density Zoom ───────────────────────────────────────
+  var ZOOM_KEY = 'kb_zoom';
+
+  function applyZoom(level) {
+    var container = document.getElementById('kb-board-container');
+    if (!container) return;
+    container.classList.remove('kb-zoom-compact', 'kb-zoom-normal', 'kb-zoom-detailed');
+    if (level) container.classList.add('kb-zoom-' + level);
+
+    document.querySelectorAll('.kb-zoom-btn').forEach(function (btn) {
+      btn.classList.toggle('kb-zoom-active', btn.dataset.zoom === level);
+    });
+
+    try { localStorage.setItem(ZOOM_KEY, level || ''); } catch (e) {}
+  }
+
+  function initZoom() {
+    var saved;
+    try { saved = localStorage.getItem(ZOOM_KEY); } catch (e) {}
+    applyZoom(saved || 'normal');
+
+    document.querySelectorAll('.kb-zoom-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        applyZoom(btn.dataset.zoom);
+      });
+    });
+  }
+
+  // ─── Quick Search ─────────────────────────────────────────────
+  function initSearch() {
+    var input = document.getElementById('kb-search');
+    if (!input) return;
+
+    input.addEventListener('input', function () {
+      var term = input.value.trim().toLowerCase();
+      document.querySelectorAll('.kb-card').forEach(function (card) {
+        if (!term) {
+          card.style.display = '';
+        } else {
+          var text = (card.textContent || '').toLowerCase();
+          card.style.display = text.indexOf(term) !== -1 ? '' : 'none';
+        }
+      });
+      refreshColumnCounts();
+    });
+  }
+
+  // ─── Swimlane Collapse ───────────────────────────────────────
+  function kbToggleSwimlane(headerEl) {
+    var lane = headerEl.closest('.kb-swimlane');
+    if (!lane) return;
+    var collapsed = lane.classList.toggle('kb-swimlane-collapsed');
+    var icon = headerEl.querySelector('.kb-swimlane-toggle');
+    if (icon) {
+      icon.classList.toggle('icon-arrow-down', !collapsed);
+      icon.classList.toggle('icon-arrow-right', collapsed);
+    }
+    var key = lane.dataset.swimlaneKey;
+    try {
+      var state = JSON.parse(localStorage.getItem('kb_swimlanes') || '{}');
+      state[key] = collapsed;
+      localStorage.setItem('kb_swimlanes', JSON.stringify(state));
+    } catch (e) {}
+  }
+  window.kbToggleSwimlane = kbToggleSwimlane;
+
+  function restoreSwimlaneState() {
+    var state;
+    try { state = JSON.parse(localStorage.getItem('kb_swimlanes') || '{}'); } catch (e) { return; }
+    document.querySelectorAll('.kb-swimlane').forEach(function (lane) {
+      var key = lane.dataset.swimlaneKey;
+      if (state[key] === true) {
+        lane.classList.add('kb-swimlane-collapsed');
+        var icon = lane.querySelector('.kb-swimlane-toggle');
+        if (icon) {
+          icon.classList.remove('icon-arrow-down');
+          icon.classList.add('icon-arrow-right');
+        }
+      }
+    });
+  }
 
   // ─── Keyboard Navigation ─────────────────────────────────────
   function initKeyboardNav() {
@@ -218,8 +320,19 @@
 
       var colBody = focused.closest('.kb-column-body');
       if (!colBody) return;
-      var cards   = Array.from(colBody.querySelectorAll('.kb-card'));
-      var idx     = cards.indexOf(focused);
+
+      var cards = Array.from(colBody.querySelectorAll('.kb-card'))
+                       .filter(function (c) { return c.style.display !== 'none'; });
+      var idx   = cards.indexOf(focused);
+
+      // Ctrl/Cmd + arrow: move card to adjacent status column
+      if (e.ctrlKey || e.metaKey) {
+        if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+          e.preventDefault();
+          moveCardToAdjacentColumn(focused, e.key === 'ArrowRight' ? 1 : -1);
+        }
+        return;
+      }
 
       switch (e.key) {
         case 'ArrowDown':
@@ -256,7 +369,6 @@
           break;
         }
 
-        // Feature 8: Enter navigates to issue page
         case 'Enter':
         case ' ':
           e.preventDefault();
@@ -267,13 +379,45 @@
     });
   }
 
+  function moveCardToAdjacentColumn(card, direction) {
+    var allowed   = (card.dataset.allowedStatuses || '').split(',').filter(Boolean);
+    var allBodies = Array.from(document.querySelectorAll('.kb-column-body'));
+    var currentBody = card.closest('.kb-column-body');
+    var currentIdx  = allBodies.indexOf(currentBody);
+
+    var step = direction > 0 ? 1 : -1;
+    for (var i = currentIdx + step; i >= 0 && i < allBodies.length; i += step) {
+      var targetBody  = allBodies[i];
+      var targetStatus = targetBody.dataset.statusId;
+      if (allowed.indexOf(String(targetStatus)) === -1) continue;
+
+      var targetCol = targetBody.closest('.kb-column');
+      var toColClosed = targetCol && targetCol.classList.contains('kb-column-closed');
+      if (card.dataset.blocked === 'true' && toColClosed) {
+        showToast('error', 'This issue is blocked and cannot be moved to a closed column.');
+        return;
+      }
+
+      targetBody.appendChild(card);
+      refreshColumnCounts();
+      performUpdate(card.dataset.issueId, targetStatus, card, currentBody,
+        Array.from(currentBody.children).indexOf(card));
+      card.focus();
+      return;
+    }
+    showToast('error', 'No allowed column in that direction.');
+  }
+
   // ─── Boot ────────────────────────────────────────────────────
   function init() {
     if (!document.getElementById('kb-board-container')) return;
 
     initSortable();
     initKeyboardNav();
-    refreshColumnCounts(); // also sets initial placeholder state
+    initZoom();
+    initSearch();
+    restoreSwimlaneState();
+    refreshColumnCounts();
   }
 
   if (document.readyState === 'loading') {

@@ -1,0 +1,21 @@
+<div class="kb-swimlane" data-swimlane-key="<%= lane[:key] %>">
+  <div class="kb-swimlane-header" onclick="kbToggleSwimlane(this)">
+    <span class="kb-swimlane-toggle icon icon-arrow-down"></span>
+    <span class="kb-swimlane-label"><%= lane[:label] %></span>
+    <span class="kb-swimlane-count"><%= lane[:count] %></span>
+  </div>
+  <div class="kb-swimlane-body">
+    <div class="kb-columns">
+      <% lane[:columns].each do |col| %>
+        <%= render partial: 'column', locals: {
+          status:       col[:status],
+          issues:       col[:issues],
+          count:        col[:count],
+          closed:       col[:closed],
+          wip_limit:    wip_limits[col[:status].id],
+          global_count: (status_counts[col[:status].id] || 0)
+        } %>
+      <% end %>
+    </div>
+  </div>
+</div>

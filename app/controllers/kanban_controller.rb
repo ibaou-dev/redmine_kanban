@@ -1,7 +1,5 @@
 class KanbanController < ApplicationController
   before_action :find_optional_project
-  before_action :authorize,        only: [:show], if: -> { @project.present? }
-  before_action :authorize_global, only: [:show], if: -> { @project.nil? }
 
   helper :queries
   include QueriesHelper
@@ -12,14 +10,30 @@ class KanbanController < ApplicationController
     retrieve_query(IssueQuery)
 
     if @query.valid?
+      @total_count = @query.issue_count
       @issues = @query.issues(
-        include: [:status, :tracker, :priority, :assigned_to, :project, :author],
+        include: [:status, :tracker, :priority, :assigned_to, :project, :author,
+                  :fixed_version, :category],
         limit:   500
       )
-      @statuses     = available_statuses
-      @columns      = build_columns(@issues, @statuses)
-      @wip_limits   = {}
-      @subtask_counts = build_subtask_counts(@issues)
+      @truncated        = @total_count > 500
+      @statuses         = available_statuses
+      @wip_limits       = load_wip_limits
+      @subtask_counts   = build_subtask_counts(@issues)
+      @attachment_counts = build_attachment_counts(@issues)
+      @blocked_ids      = build_blocked_ids(@issues)
+
+      @kb_group_by = params[:kb_group_by].presence
+      @kb_group_by = session[:kanban_group_by] if @kb_group_by.nil?
+      @kb_group_by = nil if @kb_group_by.blank?
+      session[:kanban_group_by] = @kb_group_by
+
+      if @kb_group_by.present?
+        @swimlanes = build_swimlanes(@issues, @statuses, @kb_group_by)
+        @status_counts = @issues.group_by(&:status_id).transform_values(&:size)
+      else
+        @columns = build_columns(@issues, @statuses)
+      end
     end
 
     respond_to do |format|
@@ -73,7 +87,7 @@ class KanbanController < ApplicationController
   private
 
   def available_statuses
-    if @project
+    base = if @project
       tracker_ids = @project.trackers.pluck(:id)
       IssueStatus.joins(:workflows)
                  .where(workflows: { tracker_id: tracker_ids, type: 'WorkflowTransition' })
@@ -82,6 +96,75 @@ class KanbanController < ApplicationController
                  .presence || IssueStatus.sorted
     else
       IssueStatus.sorted
+    end
+
+    if @project && KanbanColumnConfig.table_exists?
+      configs = KanbanColumnConfig.where(project: @project).to_a
+      if configs.any?
+        visible_ids = configs.select(&:visible).map(&:status_id).to_set
+        pos_map     = configs.each_with_object({}) { |c, h| h[c.status_id] = c.position }
+        base = base.select { |s| visible_ids.include?(s.id) }
+                   .sort_by { |s| pos_map[s.id] || 9999 }
+      end
+    end
+
+    base
+  end
+
+  def load_wip_limits
+    return {} unless @project && KanbanColumnConfig.table_exists?
+    KanbanColumnConfig.where(project: @project)
+                      .each_with_object({}) { |c, h| h[c.status_id] = c.wip_limit if c.wip_limit }
+  end
+
+  def build_attachment_counts(issues)
+    return {} if issues.empty?
+    Attachment.where(container_type: 'Issue', container_id: issues.map(&:id))
+              .group(:container_id)
+              .count
+  end
+
+  def build_blocked_ids(issues)
+    return Set.new if issues.empty?
+    IssueRelation
+      .where(relation_type: IssueRelation::TYPE_BLOCKS, issue_to_id: issues.map(&:id))
+      .joins("INNER JOIN issues blocker ON blocker.id = issue_relations.issue_from_id")
+      .joins("INNER JOIN issue_statuses bs ON bs.id = blocker.status_id")
+      .where("bs.is_closed = ?", false)
+      .pluck(:issue_to_id)
+      .to_set
+  end
+
+  def build_swimlanes(issues, statuses, group_by)
+    attr = SWIMLANE_ATTRS[group_by]
+    return [] unless attr
+
+    grouped = issues.group_by { |i| i.public_send(attr) }
+    sorted  = grouped.sort_by { |k, _| swimlane_sort_key(k) }
+
+    sorted.map do |value, group_issues|
+      {
+        label:   value ? value.name : l(:label_none),
+        key:     value ? "#{value.class.name.underscore}_#{value.id}" : 'none',
+        count:   group_issues.size,
+        columns: build_columns(group_issues, statuses)
+      }
+    end
+  end
+
+  SWIMLANE_ATTRS = {
+    'assigned_to'   => 'assigned_to',
+    'tracker'       => 'tracker',
+    'priority'      => 'priority',
+    'fixed_version' => 'fixed_version',
+    'category'      => 'category'
+  }.freeze
+
+  def swimlane_sort_key(value)
+    return [1, ''] if value.nil?
+    case value
+    when IssuePriority then [0, value.position]
+    else [0, value.name.to_s.downcase]
     end
   end
 

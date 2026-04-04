@@ -36,7 +36,43 @@
       <%= link_to sprite_icon('reload', l(:button_clear)),
                   { controller: 'kanban', action: 'show', project_id: @project, set_filter: 1 },
                   class: 'icon icon-reload' %>
+
+      <span class="kb-board-controls hide-when-print">
+        <span class="kb-groupby-wrap">
+          <label for="kb_group_by" class="kb-control-label"><%= l(:label_group_by) %></label>
+          <%= select_tag 'kb_group_by',
+            options_for_select([
+              [l(:label_none), ''],
+              [l(:field_assigned_to), 'assigned_to'],
+              [l(:field_tracker), 'tracker'],
+              [l(:field_priority), 'priority'],
+              [l(:field_fixed_version), 'fixed_version'],
+              [l(:field_category), 'category']
+            ], @kb_group_by.to_s),
+            id: 'kb_group_by',
+            onchange: 'document.getElementById("query_form").submit()',
+            class: 'kb-groupby-select' %>
+        </span>
+
+        <span class="kb-zoom-controls" id="kb-zoom-controls" aria-label="<%= l(:label_card_density) %>">
+          <button type="button" class="kb-zoom-btn" data-zoom="compact"  title="<%= l(:label_zoom_compact) %>">&#9646;&#9646;</button>
+          <button type="button" class="kb-zoom-btn" data-zoom="normal"   title="<%= l(:label_zoom_normal) %>">&#9644;</button>
+          <button type="button" class="kb-zoom-btn" data-zoom="detailed" title="<%= l(:label_zoom_detailed) %>">&#8803;</button>
+        </span>
+
+        <span class="kb-search-wrap">
+          <input type="text" id="kb-search" class="kb-search-input"
+                 placeholder="<%= l(:label_filter_issues) %>"
+                 aria-label="<%= l(:label_filter_issues) %>" />
+        </span>
+      </span>
     </p>
+  </div>
+<% end %>
+
+<% if @truncated %>
+  <div class="flash warning kb-truncation-warning">
+    <%= l(:notice_kanban_truncated, count: 500, total: @total_count) %>
   </div>
 <% end %>
 

@@ -4,16 +4,29 @@
       onsubmit="return false;">
 
   <div class="kb-board" role="region" aria-label="<%= l(:label_kanban_board) %>">
-    <div class="kb-columns">
-      <% @columns.each do |col| %>
-        <%= render partial: 'column', locals: {
-          status:    col[:status],
-          issues:    col[:issues],
-          count:     col[:count],
-          closed:    col[:closed],
-          wip_limit: @wip_limits[col[:status].id]
+    <% if @swimlanes&.any? %>
+      <%# Swimlane mode: one row of columns per group %>
+      <% @swimlanes.each do |lane| %>
+        <%= render partial: 'swimlane', locals: {
+          lane:        lane,
+          statuses:    @statuses,
+          wip_limits:  @wip_limits,
+          status_counts: @status_counts
         } %>
       <% end %>
-    </div>
+    <% else %>
+      <div class="kb-columns">
+        <% @columns.each do |col| %>
+          <%= render partial: 'column', locals: {
+            status:       col[:status],
+            issues:       col[:issues],
+            count:        col[:count],
+            closed:       col[:closed],
+            wip_limit:    @wip_limits[col[:status].id],
+            global_count: col[:count]
+          } %>
+        <% end %>
+      </div>
+    <% end %>
   </div>
 </form>

@@ -1,7 +1,9 @@
-<div class="<%= kanban_card_classes(issue) %> hascontextmenu"
+<% blocked = @blocked_ids&.include?(issue.id) %>
+<div class="<%= kanban_card_classes(issue) %> hascontextmenu<%= ' kb-blocked' if blocked %>"
      data-issue-id="<%= issue.id %>"
      data-allowed-statuses="<%= kanban_allowed_statuses_json(issue) %>"
      data-issue-url="<%= issue_path(issue) %>"
+     data-blocked="<%= blocked ? 'true' : 'false' %>"
      <% if issue.parent_id %>data-parent-id="<%= issue.parent_id %>"<% end %>
      tabindex="0"
      role="article"
@@ -18,6 +20,9 @@
   <div class="kb-card-header">
     <span class="kb-card-tracker-tag"><%= issue.tracker.name %></span>
     <div class="kb-card-header-right">
+      <% if blocked %>
+        <span class="kb-blocked-icon" title="<%= l(:label_blocked) %>">&#128274;</span>
+      <% end %>
       <a href="<%= issue_path(issue) %>"
          class="kb-card-id"
          title="<%= "#{l(:label_issue)} ##{issue.id}" %>">#<%= issue.id %></a>
@@ -29,8 +34,22 @@
   </div>
 
   <a href="<%= issue_path(issue) %>" class="kb-card-subject-link">
-    <div class="kb-card-subject"><%= issue.subject %></div>
+    <div class="kb-card-subject" title="<%= issue.subject %>"><%= issue.subject %></div>
   </a>
+
+  <%# Detailed-mode: description snippet %>
+  <% if issue.description.present? %>
+    <div class="kb-card-description kb-detail-only">
+      <%= truncate(issue.description, length: 120, escape: false) %>
+    </div>
+  <% end %>
+
+  <%# Normal + detailed: progress bar (shown when done_ratio > 0) %>
+  <% if issue.done_ratio > 0 %>
+    <div class="kb-card-progress kb-normal-up" title="<%= "#{issue.done_ratio}% #{l(:field_done_ratio)}" %>">
+      <div class="kb-card-progress-bar" style="width:<%= issue.done_ratio %>%"></div>
+    </div>
+  <% end %>
 
   <div class="kb-card-footer">
     <div class="kb-card-meta">
@@ -41,6 +60,16 @@
               title="<%= l(:field_due_date) %>: <%= format_date(issue.due_date) %>">
           <%= format_date(issue.due_date) %>
         </span>
+      <% end %>
+      <%# Detailed-mode: version and attachment count %>
+      <% if issue.fixed_version %>
+        <span class="kb-card-version kb-detail-only"
+              title="<%= l(:field_fixed_version) %>">&#127959; <%= issue.fixed_version.name %></span>
+      <% end %>
+      <% attach_count = @attachment_counts&.dig(issue.id).to_i %>
+      <% if attach_count > 0 %>
+        <span class="kb-card-attachments kb-detail-only"
+              title="<%= pluralize(attach_count, l(:label_attachment)) %>">&#128206; <%= attach_count %></span>
       <% end %>
     </div>
     <div class="kb-card-right">

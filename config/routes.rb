@@ -7,6 +7,10 @@ RedmineApp::Application.routes.draw do
         to: 'kanban#update_status',
         as: 'project_kanban_update_status'
 
+  patch '/projects/:project_id/kanban/settings',
+        to: 'kanban_settings#update',
+        as: 'project_kanban_settings'
+
   get  '/kanban',
        to: 'kanban#show',
        as: 'kanban'

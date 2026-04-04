@@ -1,0 +1,62 @@
+<% statuses = begin
+     tracker_ids = @project.trackers.pluck(:id)
+     IssueStatus.joins(:workflows)
+                .where(workflows: { tracker_id: tracker_ids, type: 'WorkflowTransition' })
+                .distinct.sorted.presence || IssueStatus.sorted
+   rescue
+     IssueStatus.sorted
+   end
+
+   configs = KanbanColumnConfig.where(project: @project)
+               .each_with_object({}) { |c, h| h[c.status_id] = c }
+%>
+
+<%= form_tag(project_kanban_settings_path(@project), method: :patch, class: 'tabular') do %>
+  <p class="help"><%= l(:text_kanban_settings_hint) %></p>
+
+  <table class="list">
+    <thead>
+      <tr>
+        <th><%= l(:field_status) %></th>
+        <th class="center"><%= l(:label_visible) %></th>
+        <th class="center"><%= l(:field_position) %></th>
+        <th class="center"><%= l(:label_wip_limit) %></th>
+      </tr>
+    </thead>
+    <tbody>
+      <% statuses.each_with_index do |status, idx| %>
+        <% cfg = configs[status.id] %>
+        <% visible  = cfg ? cfg.visible  : true %>
+        <% position = cfg ? cfg.position : idx %>
+        <% wip      = cfg ? cfg.wip_limit : nil %>
+        <tr>
+          <td>
+            <span class="badge badge-status-<%= status.is_closed? ? 'closed' : 'open' %>">
+              <%= status.name %>
+            </span>
+          </td>
+          <td class="center">
+            <%= check_box_tag "column_configs[#{status.id}][visible]", '1', visible,
+                              id: "col_visible_#{status.id}" %>
+          </td>
+          <td class="center">
+            <%= number_field_tag "column_configs[#{status.id}][position]", position,
+                                 min: 0, max: 999, size: 4,
+                                 class: 'kb-settings-pos',
+                                 id: "col_pos_#{status.id}" %>
+          </td>
+          <td class="center">
+            <%= number_field_tag "column_configs[#{status.id}][wip_limit]", wip,
+                                 min: 1, max: 999, size: 4, placeholder: '—',
+                                 class: 'kb-settings-wip',
+                                 id: "col_wip_#{status.id}" %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+
+  <p class="buttons">
+    <%= submit_tag l(:button_save), class: 'button-positive' %>
+  </p>
+<% end %>

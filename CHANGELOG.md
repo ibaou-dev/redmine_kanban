@@ -4,6 +4,100 @@ All notable changes to `redmine_kanban` are documented here.
 
 ---
 
+## [0.2.0] — Feature expansion
+
+### Added
+
+- **Swimlanes (Group-By)** — horizontal lanes grouping cards by assignee, tracker,
+  priority, version, category, or any other `IssueQuery`-supported attribute.
+  A "Group by" dropdown above the board persists the selection in `session[:kanban_group_by]`.
+  Each swimlane row is independently collapsible; collapse state is persisted in `localStorage`.
+- **Project Settings tab** — "Kanban" tab in Project Settings lets managers
+  configure per-status WIP limits, column visibility, and column order.
+  Backed by a new `kanban_column_configs` table (`project_id`, `status_id`,
+  `wip_limit`, `visible`, `position`). Controller: `KanbanSettingsController`.
+  Patch: `RedmineKanban::Patches::ProjectsHelperPatch` (same `prepend` pattern
+  as `redmine_git_mirror`).
+- **Card density zoom** — Compact / Normal / Detailed toggle in the board
+  controls. CSS classes `kb-zoom-compact`, `kb-zoom-normal`, `kb-zoom-detailed`
+  on `#kb-board-container` show/hide card sections via `.kb-detail-only` /
+  `.kb-normal-up` selectors. Preference stored in `localStorage`.
+- **% Done progress bar** — thin bar at card bottom showing `issue.done_ratio`.
+  Visible in Normal and Detailed zoom levels.
+- **Description snippet** — first ~100 chars of the issue description shown in
+  Detailed zoom level only.
+- **Attachment count badge** — displayed in Detailed zoom level. Computed via
+  a single `GROUP BY container_id` query — no N+1.
+- **Version/target badge** — `issue.fixed_version` label displayed in Detailed
+  zoom level.
+- **Quick search** — client-side text filter above the board; filters cards by
+  subject/ID/assignee on every keypress. Column counts update in real time.
+- **Loading spinner** — card shows an inline SVG spinner during the AJAX status
+  update request. Removed on success or error.
+- **Truncation warning** — flash banner when the query returns >500 issues:
+  "Showing 500 of N issues. Use filters to narrow results."
+  (mirrors Redmine's Gantt `@gantt.truncated` pattern).
+- **Full subject tooltip** — `title="<subject>"` on the subject link so truncated
+  subjects are readable on hover.
+- **Blocked issue indicator** — lock icon overlay on cards blocked by an open
+  issue. Computed via a single SQL JOIN query (`IssueRelation::TYPE_BLOCKS`).
+  Drag to a closed-status column is prevented client-side with an error toast.
+  Server-side check also prevents closing via `update_status`.
+- **Keyboard status transitions** — `Ctrl+→` / `Ctrl+←` on a focused card moves
+  it to the next/previous allowed status column. Calls `performUpdate` with the
+  same validation path as drag-and-drop.
+
+### Changed
+
+- **Controller authorisation simplified** — removed the redundant double
+  `before_action :authorize` after `find_optional_project` (which already calls
+  `authorize_global`). Now mirrors `GanttsController` exactly: one
+  `before_action :find_optional_project`.
+- **`available_statuses`** now respects `KanbanColumnConfig` visibility and
+  ordering when records exist for the current project; falls back to all workflow
+  statuses when no config is present.
+- **WIP limit comparison** — swimlane mode passes both a local count (per-lane)
+  and a `global_count` (across all lanes) to the column partial; the WIP limit
+  badge compares against the global total to avoid false "exceeded" warnings.
+- **Version bumped** to `0.2.0`.
+
+### Fixed
+
+- **Test environment host authorisation** — Rails `HostAuthorization` middleware
+  blocked `www.example.com` (the default Rails integration-test host), causing
+  all integration tests to return 403. Added `config.hosts << "www.example.com"`
+  in `additional_environment.rb` under `Rails.env.test?`.
+- **Integration test class** changed from `ActionDispatch::IntegrationTest` to
+  `Redmine::IntegrationTest` to get `log_user` and other Redmine test helpers.
+- **Helper test** includes `AvatarsHelper` so `kanban_assignee_cell` tests work.
+
+### Design Decisions
+
+**`KanbanColumnConfig` as a separate model, not a plugin setting**
+Redmine's `Setting` store is key/value — it handles a single setting per plugin
+per key. Per-project, per-status configuration (WIP limits, visibility, order)
+requires a proper join table. A dedicated model keeps the DB schema clean and
+the queries simple.
+
+**Swimlane collapse state in `localStorage`**
+Collapse state is stored client-side rather than in `User.current.pref` to
+avoid a server round-trip on every toggle and to keep the plugin stateless on
+the server side for swimlane UI state.
+
+**WIP limits count globally, not per-swimlane**
+When swimlanes are active, each swimlane shows a column for every status. A
+"WIP limit exceeded" check that counts only the cards within the current
+swimlane would create false negatives (each swimlane looks fine in isolation
+even though the aggregate across all lanes exceeds the limit). The global count
+is therefore used for comparison while the local count is shown in the badge.
+
+**Blocked detection via a single SQL JOIN, not `issue.blocked?` per card**
+Calling `issue.blocked?` for each of 500 cards would result in 500 queries.
+Instead, a single `JOIN` on `issue_relations` where `relation_type = 'blocks'`
+and the blocking issue is open gives the full set of blocked IDs in one query.
+
+---
+
 ## [0.1.0] — Initial release + post-testing stabilisation
 
 ### Added
