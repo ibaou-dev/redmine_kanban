@@ -253,10 +253,17 @@ body.kb-dragging * {
   color: var(--em-text, #1e293b);
 }
 
-/* Context menu selection highlight on cards */
+/* Context menu selection highlight on cards —
+   override the theme's solid-blue row treatment with a subtle ring */
 .kb-card.context-menu-selection {
-  background: var(--em-accent-light, #edf2ff);
-  border-color: var(--em-accent, #4c6ef5);
+  background: var(--em-surface, #ffffff) !important;
+  box-shadow: 0 0 0 2px var(--em-accent, #4c6ef5),
+              var(--em-shadow-sm, 0 1px 3px rgba(0,0,0,0.08)) !important;
+  color: var(--em-text, #1e293b) !important;
+}
+.kb-card.context-menu-selection a,
+.kb-card.context-menu-selection a:hover {
+  color: var(--em-accent, #4c6ef5) !important;
 }
 
 /* Fix 3 + Feature 8: clickable subject link */
