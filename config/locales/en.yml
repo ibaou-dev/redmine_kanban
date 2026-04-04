@@ -6,6 +6,7 @@ en:
 
   label_kanban: "Kanban"
   label_kanban_board: "Kanban Board"
+  label_group_by: "Group by"
   label_wip_limit: "WIP Limit"
   label_wip_exceeded: "WIP limit exceeded"
   label_no_issues: "No issues in this column"

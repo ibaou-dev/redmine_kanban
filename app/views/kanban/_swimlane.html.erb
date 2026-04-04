@@ -13,7 +13,8 @@
           count:        col[:count],
           closed:       col[:closed],
           wip_limit:    wip_limits[col[:status].id],
-          global_count: (status_counts[col[:status].id] || 0)
+          global_count: (status_counts[col[:status].id] || 0),
+          sort_group:   "kanban-lane-#{lane[:key]}"
         } %>
       <% end %>
     </div>

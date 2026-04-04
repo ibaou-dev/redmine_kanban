@@ -175,8 +175,9 @@
     }
 
     document.querySelectorAll('.kb-column-body').forEach(function (colBody) {
+      var sortGroup = colBody.dataset.sortGroup || 'kanban';
       Sortable.create(colBody, {
-        group:           { name: 'kanban', pull: true, put: true },
+        group:           { name: sortGroup, pull: true, put: true },
         animation:       150,
         ghostClass:      'kb-card-ghost',
         chosenClass:     'kb-card-chosen',

@@ -37,12 +37,19 @@
     <div class="kb-card-subject" title="<%= issue.subject %>"><%= issue.subject %></div>
   </a>
 
-  <%# Detailed-mode: description snippet %>
-  <% if issue.description.present? %>
-    <div class="kb-card-description kb-detail-only">
+  <%# Detailed-mode: description snippet (always shown in detailed, blank if no description) %>
+  <div class="kb-card-description kb-detail-only">
+    <% if issue.description.present? %>
       <%= truncate(issue.description, length: 120, escape: false) %>
-    </div>
-  <% end %>
+    <% else %>
+      <span class="kb-no-description">—</span>
+    <% end %>
+  </div>
+
+  <%# Detailed-mode: author + creation date %>
+  <div class="kb-card-author kb-detail-only">
+    <%= issue.author.name %> &middot; <%= format_date(issue.created_on) %>
+  </div>
 
   <%# Normal + detailed: progress bar (shown when done_ratio > 0) %>
   <% if issue.done_ratio > 0 %>

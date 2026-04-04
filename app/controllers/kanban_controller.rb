@@ -23,10 +23,13 @@ class KanbanController < ApplicationController
       @attachment_counts = build_attachment_counts(@issues)
       @blocked_ids      = build_blocked_ids(@issues)
 
-      @kb_group_by = params[:kb_group_by].presence
-      @kb_group_by = session[:kanban_group_by] if @kb_group_by.nil?
-      @kb_group_by = nil if @kb_group_by.blank?
-      session[:kanban_group_by] = @kb_group_by
+      if params.key?(:kb_group_by)
+        # Explicit submission (including "None" / empty string) — always honour it
+        @kb_group_by = params[:kb_group_by].presence
+        session[:kanban_group_by] = @kb_group_by
+      else
+        @kb_group_by = session[:kanban_group_by].presence
+      end
 
       if @kb_group_by.present?
         @swimlanes = build_swimlanes(@issues, @statuses, @kb_group_by)

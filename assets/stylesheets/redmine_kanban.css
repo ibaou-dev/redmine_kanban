@@ -323,6 +323,17 @@ body.kb-dragging * {
   overflow: hidden;
 }
 
+.kb-no-description {
+  color: var(--em-border, #cbd5e1);
+  font-style: italic;
+}
+
+.kb-card-author {
+  font-size: 0.7rem;
+  color: var(--em-text-secondary, #94a3b8);
+  margin: 2px 0 4px;
+}
+
 /* ─── Progress bar ─── */
 .kb-card-progress {
   height: 4px;

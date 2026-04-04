@@ -19,7 +19,9 @@
     </span>
   </div>
 
-  <div class="kb-column-body" data-status-id="<%= status.id %>">
+  <div class="kb-column-body"
+       data-status-id="<%= status.id %>"
+       data-sort-group="<%= local_assigns[:sort_group] || 'kanban' %>">
     <% issues.each do |issue| %>
       <%= render partial: 'card', locals: { issue: issue } %>
     <% end %>
