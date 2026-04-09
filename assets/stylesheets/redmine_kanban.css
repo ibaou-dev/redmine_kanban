@@ -328,10 +328,45 @@ body.kb-dragging * {
   font-style: italic;
 }
 
-.kb-card-author {
-  font-size: 0.7rem;
-  color: var(--em-text-secondary, #94a3b8);
-  margin: 2px 0 4px;
+/* ─── Date + estimate table (detail mode) ─── */
+.kb-card-dates {
+  display: table;
+  border-collapse: collapse;
+  margin: 3px 0 4px;
+  width: 100%;
+}
+
+.kb-date-row {
+  display: table-row;
+}
+
+.kb-date-label,
+.kb-date-value {
+  display: table-cell;
+  padding: 1px 0;
+  vertical-align: baseline;
+  font-size: 0.6875rem;
+  line-height: 1.4;
+}
+
+.kb-date-label {
+  padding-right: 8px;
+  white-space: nowrap;
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--em-text-muted, #94a3b8);
+  letter-spacing: 0.04em;
+  width: 1%;
+}
+
+.kb-date-value {
+  color: var(--em-text-secondary, #64748b);
+}
+
+.kb-date-row.kb-overdue .kb-date-label,
+.kb-date-row.kb-overdue .kb-date-value {
+  color: var(--em-error, #e03131);
 }
 
 /* ─── Progress bar ─── */
@@ -408,12 +443,27 @@ body.kb-dragging * {
 }
 
 /* Detailed-mode meta items */
-.kb-card-version,
 .kb-card-attachments {
   font-size: 0.625rem;
   color: var(--em-text-muted, #94a3b8);
   white-space: nowrap;
 }
+
+.kb-version-chip {
+  display: inline-block;
+  font-size: 0.6rem;
+  font-weight: 600;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: var(--em-accent-light, #edf2ff);
+  color: var(--em-accent, #4c6ef5);
+  border: 1px solid #bac8ff;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+/* Hide the plain footer due date in detailed mode — the dates row shows it labelled */
+#kb-board-container.kb-zoom-detailed .kb-card-due-footer { display: none; }
 
 /* ─── Assignee avatar ─── */
 .kb-card-right { display: flex; align-items: center; }

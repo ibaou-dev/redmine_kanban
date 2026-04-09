@@ -23,6 +23,15 @@ Redmine::Plugin.register :redmine_kanban do
        caption:  :label_kanban,
        after:    :gantt,
        param:    :project_id
+
+  menu :application_menu,
+       :kanban,
+       { controller: 'kanban', action: 'show' },
+       caption: :label_kanban,
+       if: Proc.new {
+         User.current.allowed_to?(:view_kanban, nil, global: true) &&
+           EnabledModule.exists?(project: Project.visible, name: :kanban)
+       }
 end
 
 require_relative 'lib/redmine_kanban/hooks/view_layouts_base_html_head_hook'

@@ -8,6 +8,9 @@
   <% if @project %>
     <%= link_to l(:label_issue_plural), project_issues_path(@project), class: 'icon icon-list' %>
     <%= link_to l(:label_gantt), project_gantt_path(@project), class: 'icon icon-gantt' %>
+  <% else %>
+    <%= link_to l(:label_issue_plural), issues_path, class: 'icon icon-list' %>
+    <%= link_to l(:label_gantt), '/issues/gantt', class: 'icon icon-gantt' %>
   <% end %>
 </div>
 
@@ -43,6 +46,7 @@
           <%= select_tag 'kb_group_by',
             options_for_select([
               [l(:label_none), ''],
+              [l(:field_project), 'project'],
               [l(:field_assigned_to), 'assigned_to'],
               [l(:field_tracker), 'tracker'],
               [l(:field_priority), 'priority'],

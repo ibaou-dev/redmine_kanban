@@ -29,6 +29,8 @@ class KanbanController < ApplicationController
         session[:kanban_group_by] = @kb_group_by
       else
         @kb_group_by = session[:kanban_group_by].presence
+        # Default to group-by-project in the global (cross-project) view
+        @kb_group_by ||= 'project' if @project.nil?
       end
 
       if @kb_group_by.present?
@@ -156,6 +158,7 @@ class KanbanController < ApplicationController
   end
 
   SWIMLANE_ATTRS = {
+    'project'       => 'project',
     'assigned_to'   => 'assigned_to',
     'tracker'       => 'tracker',
     'priority'      => 'priority',
@@ -167,6 +170,7 @@ class KanbanController < ApplicationController
     return [1, ''] if value.nil?
     case value
     when IssuePriority then [0, value.position]
+    when Project       then [0, value.name.to_s.downcase]
     else [0, value.name.to_s.downcase]
     end
   end

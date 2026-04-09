@@ -26,10 +26,8 @@
       <%= render partial: 'card', locals: { issue: issue } %>
     <% end %>
 
-    <% if issues.empty? %>
-      <div class="kb-empty-placeholder" aria-hidden="true">
-        <%= l(:label_no_issues) %>
-      </div>
-    <% end %>
+    <div class="kb-empty-placeholder" aria-hidden="true"<%= ' style="display:none"'.html_safe unless issues.empty? %>>
+      <%= l(:label_no_issues) %>
+    </div>
   </div>
 </div>

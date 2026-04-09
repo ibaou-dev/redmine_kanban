@@ -181,6 +181,7 @@
         animation:       150,
         ghostClass:      'kb-card-ghost',
         chosenClass:     'kb-card-chosen',
+        draggable:       '.kb-card',
         filter:          '.kb-card-menu-btn, .kb-card-id, .kb-card-subject-link',
         preventOnFilter: false,
         fallbackOnBody:  true,

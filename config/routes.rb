@@ -14,4 +14,8 @@ RedmineApp::Application.routes.draw do
   get  '/kanban',
        to: 'kanban#show',
        as: 'kanban'
+
+  patch '/kanban/issues/:id/update_status',
+        to: 'kanban#update_status',
+        as: 'kanban_update_status'
 end

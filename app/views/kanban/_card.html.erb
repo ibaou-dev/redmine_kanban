@@ -46,9 +46,26 @@
     <% end %>
   </div>
 
-  <%# Detailed-mode: author + creation date %>
-  <div class="kb-card-author kb-detail-only">
-    <%= issue.author.name %> &middot; <%= format_date(issue.created_on) %>
+  <%# Detailed-mode: labelled date + estimate row %>
+  <div class="kb-card-dates kb-detail-only">
+    <% if issue.start_date %>
+      <span class="kb-date-row kb-date-start">
+        <span class="kb-date-label"><%= l(:field_start_date) %></span>
+        <span class="kb-date-value"><%= format_date(issue.start_date) %></span>
+      </span>
+    <% end %>
+    <% if issue.due_date %>
+      <span class="kb-date-row<%= ' kb-overdue' if issue.overdue? %>">
+        <span class="kb-date-label"><%= l(:field_due_date) %></span>
+        <span class="kb-date-value"><%= format_date(issue.due_date) %></span>
+      </span>
+    <% end %>
+    <% if issue.estimated_hours.present? %>
+      <span class="kb-date-row kb-date-est">
+        <span class="kb-date-label"><%= l(:field_estimated_hours) %></span>
+        <span class="kb-date-value"><%= "%.0f" % issue.estimated_hours %>h</span>
+      </span>
+    <% end %>
   </div>
 
   <%# Normal + detailed: progress bar (shown when done_ratio > 0) %>
@@ -63,15 +80,16 @@
       <%= kanban_priority_label(issue) %>
       <%= kanban_subtask_badge(issue) %>
       <% if issue.due_date %>
-        <span class="kb-card-due<%= ' kb-overdue' if issue.overdue? %>"
+        <span class="kb-card-due kb-card-due-footer<%= ' kb-overdue' if issue.overdue? %>"
               title="<%= l(:field_due_date) %>: <%= format_date(issue.due_date) %>">
           <%= format_date(issue.due_date) %>
         </span>
       <% end %>
       <%# Detailed-mode: version and attachment count %>
       <% if issue.fixed_version %>
-        <span class="kb-card-version kb-detail-only"
-              title="<%= l(:field_fixed_version) %>">&#127959; <%= issue.fixed_version.name %></span>
+        <span class="kb-card-version kb-detail-only" title="<%= l(:field_fixed_version) %>">
+          <span class="kb-version-chip"><%= issue.fixed_version.name %></span>
+        </span>
       <% end %>
       <% attach_count = @attachment_counts&.dig(issue.id).to_i %>
       <% if attach_count > 0 %>
