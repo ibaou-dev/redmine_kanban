@@ -4,7 +4,9 @@ Redmine::Plugin.register :redmine_kanban do
   name        'Redmine Kanban'
   author      'ibaou'
   description 'Kanban board view for Redmine issues with drag-and-drop status transitions'
-  version     '0.2.0'
+  version     '1.0.0'
+  url         'https://github.com/ibaou-dev/redmine_kanban'
+  author_url  'https://github.com/ibaou-dev'
 
   requires_redmine version_or_higher: '5.0'
 
