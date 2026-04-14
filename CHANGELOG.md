@@ -4,6 +4,67 @@ All notable changes to `redmine_kanban` are documented here.
 
 ---
 
+## [1.1.0] — Global board, card redesign, bug fixes
+
+### Added
+
+- **Global Kanban board** — accessible at `/kanban` (no project required), mirroring
+  the behaviour of Redmine's built-in Issues list and Gantt chart. Uses
+  `find_optional_project` so the full IssueQuery filter panel and saved queries
+  work cross-project exactly as in project-scoped mode.
+- **Application menu entry** — *Kanban* link appears in the top-level navigation
+  alongside Issues and Gantt. Visibility guard: the user must have `view_kanban`
+  in at least one project and that project must have the Kanban module enabled
+  (mirrors the Gantt `:if` condition in `Redmine::Preparation`).
+- **Global `update_status` route** — `PATCH /kanban/issues/:id/update_status`
+  added alongside the existing project-scoped route so drag-and-drop status
+  transitions work in the global view.
+- **Swimlane by Project** — "Project" added as a group-by option in the swimlane
+  dropdown. The global view defaults to this grouping automatically when no
+  explicit group-by is stored in the session.
+- **Contextual links in global view** — Issues and Gantt links in the contextual
+  bar now resolve to `/issues` and `/issues/gantt` when no project is selected
+  (previously only rendered when `@project` was present).
+- **Labelled date table in Detailed card view** — replaces the ambiguous
+  `Author · created_on` line with an explicit two-column key/value grid showing
+  *Start Date*, *Due Date*, and *Estimated Hours* (each only when present).
+  Overdue due dates render in red across both columns.
+- **Version chip** — target version is now rendered as a styled accent-coloured
+  chip (no emoji) in the card footer. The previously used `&#127959;` (🏗)
+  construction-site emoji was misleading alongside estimated time data.
+- **Due date hidden in detailed footer** — the plain unlabelled due date in the
+  card footer is suppressed in Detailed zoom (`.kb-card-due-footer` rule) because
+  the dates table above already shows it with an explicit label.
+
+### Fixed
+
+- **Crash on empty query results in swimlane mode** — `_board.html.erb` checked
+  `@swimlanes&.any?` to detect swimlane mode. When a custom query returned zero
+  results `@swimlanes` was `[]`, which is falsy via `.any?`, causing a fall-through
+  to the `else` branch where `@columns.each` raised `NoMethodError: undefined
+  method 'each' for nil`. Fixed by checking `if @swimlanes` (nil vs non-nil).
+  Three regression tests added covering column mode, swimlane mode, and the
+  global view with empty results.
+- **Empty column placeholder not appearing after dragging all cards out** —
+  `.kb-empty-placeholder` was only rendered server-side when a column started
+  empty. Columns that had cards at page load never had the element in the DOM,
+  so `refreshColumnCounts()` could not show it after dragging all cards away.
+  Fixed by always rendering the placeholder (hidden via `style="display:none"`
+  when issues are present).
+- **SortableJS dragging through the empty placeholder** — the placeholder `<div>`
+  inside `.kb-column-body` was treated by SortableJS as a potential drop slot,
+  requiring excessive cursor movement to drag past it. Fixed by adding
+  `draggable: '.kb-card'` to the Sortable config so only actual cards participate
+  in sort calculations.
+
+### Changed
+
+- `config/database.yml` is now bind-mounted into the container via
+  `docker-compose.yml`, providing a stable `test:` database configuration
+  (`redmine_test`) without relying on an in-image file.
+
+---
+
 ## [0.2.0] — Feature expansion
 
 ### Added
