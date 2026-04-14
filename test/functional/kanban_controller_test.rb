@@ -66,6 +66,41 @@ class KanbanControllerTest < Redmine::IntegrationTest
     assert_select '#kb-board-container'
   end
 
+  # Regression: board crashed with NoMethodError when a custom query returned 0
+  # results in swimlane mode — @swimlanes was [] (falsy via .any?) so it fell
+  # through to @columns.each which was nil.
+  test 'show does not crash when query returns no results in column mode' do
+    log_user('jsmith', 'jsmith')
+    get project_kanban_path(@project), params: {
+      set_filter: '1',
+      f: ['subject'], op: { subject: '~' }, v: { subject: ['XYZZY_NO_MATCH_99999'] }
+    }
+    assert_response :success
+    assert_select '#kb-board-container'
+    assert_select '.kb-column'
+  end
+
+  test 'show does not crash when query returns no results in swimlane mode' do
+    log_user('jsmith', 'jsmith')
+    get project_kanban_path(@project), params: {
+      set_filter: '1', kb_group_by: 'tracker',
+      f: ['subject'], op: { subject: '~' }, v: { subject: ['XYZZY_NO_MATCH_99999'] }
+    }
+    assert_response :success
+    assert_select '#kb-board-container'
+    assert_select '.kb-swimlane', count: 0
+  end
+
+  test 'show global kanban does not crash when query returns no results' do
+    log_user('admin', 'admin')
+    get kanban_path, params: {
+      set_filter: '1',
+      f: ['subject'], op: { subject: '~' }, v: { subject: ['XYZZY_NO_MATCH_99999'] }
+    }
+    assert_response :success
+    assert_select '#kb-board-container'
+  end
+
   # ─── update_status ─────────────────────────────────────────────
 
   test 'update_status rejects unauthenticated request' do

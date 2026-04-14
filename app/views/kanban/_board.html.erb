@@ -4,7 +4,7 @@
       onsubmit="return false;">
 
   <div class="kb-board" role="region" aria-label="<%= l(:label_kanban_board) %>">
-    <% if @swimlanes&.any? %>
+    <% if @swimlanes %>
       <%# Swimlane mode: one row of columns per group %>
       <% @swimlanes.each do |lane| %>
         <%= render partial: 'swimlane', locals: {
